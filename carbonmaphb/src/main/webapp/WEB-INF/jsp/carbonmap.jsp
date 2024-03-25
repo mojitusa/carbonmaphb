@@ -98,15 +98,15 @@
             peobjeongdongLayer.setVisible(!peobjeongdongLayer.getVisible());
         });
         
-        $('#layerForm').submit(function (event) {
+        $('#sdlayerForm').submit(function (event) {
             event.preventDefault(); // 기본 동작인 폼 전송을 막음
 
-            var selectedLayer = $('#layerSelect').val(); // 선택된 레이어 값
+            var selectedLayer = $('#sdlayerSelect').val(); // 선택된 레이어 값
 
             // 여기에 선택된 레이어에 따라 원하는 동작을 수행하는 코드 추가
 
             // 예를 들어, 선택된 레이어에 따라 특정 기능을 수행하거나 특정 레이어를 표시하는 코드를 추가할 수 있습니다.
-        });        
+        });
         
         
         $('#sdLayerSelect').change(function() {
@@ -115,18 +115,42 @@
         	console.log('선택한 값 : ' + sdValue);
         	
 			// AJAX를 통해 선택한 값을 컨트롤러로 전송
-			$.ajax({
-				type: 'POST',
-				url: '/sdSelect.do',
-				data: {selectedValue: sdValue}, // 선택한 값을 데이터로 전송
-				success: function(response) {
-					alert('서버로 전송되었습니다.');
-				},
-				error: function(xhr, status, error) {
-					alert('오류 발생');
-				}
-			});        	
+            $.ajax({
+                type: 'POST',
+                url: '/sdSelect.do',
+                data: { selectedValue: sdValue },
+                dataType: 'json',
+                success: function(response) {
+                    var sggList = response;
+
+                    // sggLayerSelect 업데이트
+                    var sggLayerSelect  = $('#sggLayerSelect');
+                    
+                    var sggLayerList = $('#sgglayerList'); 
+                    
+                    $.each(sggList, function(index, item) {
+                        // select 요소에 옵션 추가
+                        console.log(item.sgg_nm);
+                        sggLayerSelect.append($('<option></option>').attr('value', item.ssg_nm).text(item.ssg_nm));
+                        
+                        // ul 요소에 리스트 아이템 추가
+                        sggLayerList.append($('<li></li>').attr('id', 'sggLayerItem').text(item.ssg_nm));
+                        
+                    });
+                    
+                    console.log(sggList); // 객체를 콘솔에 출력
+                },
+                error: function(xhr, status, error) {
+                    alert('오류 발생');
+                }
+            });       	
         	
+        });
+        
+        $('#sggLayerSelect').change(function() {
+        	var sggValue = $(this).val();  // 클릭된 항목의 텍스트 값을 가져옵니다.
+        	alert('시군구 선택한 값 : ' + sggValue);
+        	console.log('시군구 선택한 값 : ' + sggValue);
         });
 		
 		
@@ -134,7 +158,7 @@
 	});
 
 </script>
-<style>
+<style> 
     .map-container {
         position: relative;
     }	
@@ -157,9 +181,11 @@
         z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */
     }
 
-    #toggleShigungu {
+    #sggLayerSelect {
         top: 80px; /* 시군구 레이어 토글 버튼의 위치 */
         left: 50px;
+        position: absolute;
+        z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */
     }
 
     #togglePeobjeongdong {
@@ -172,23 +198,35 @@
 	<div id="map" class="map">
 		<!-- 실제 지도가 표출 될 영역 -->
 	</div>
-	<form id="layerForm">
+	<form id="sdlayerForm">
 		<select id="sdLayerSelect" name="sdSelectLayer" >
             <c:forEach items="${sdList}" var="item">
-                <option value="${item}">${item}</option>
+                <option value="${item.sd_nm}">${item.sd_nm}</option>
             </c:forEach>			
 		</select>
 		<ul id="sdlayerList">
 			<c:forEach items="${sdList }" var="item">
-				<li id="sdLayerItem">${item }</li>
+				<li id="sdLayerItem" style="display: none;">${item.sd_nm }</li>
 			</c:forEach>
 		</ul>
 		<input type="hidden" id="sdSelectedLayer" name="sdSelectedLayer">
 	</form>
 	
+	
+
+	<form id="sgglayerForm">
+		<select id="sggLayerSelect" name="sggSelectLayer" >
+		</select>
+		<ul id="sgglayerList">
+		</ul>
+		<input type="hidden" id="sggSelectedLayer" name="sggSelectedLayer">
+	</form>	
+	
+	
 	<button id="toggleShido" class="toggle-button">시도 레이어 토글</button>
 	<button id="toggleShigungu" class="toggle-button">시군구 레이어 토글</button>
 	<button id="togglePeobjeongdong" class="toggle-button">법정동 레이어 토글</button>
+	
 	
 	
 </body>

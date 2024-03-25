@@ -19,9 +19,13 @@ public class ServletDAO extends EgovComAbstractDAO {
 		return selectList("servlet.serVletTest");
 	}
 
-	public List<String> getSd() {
+	public List<Map<String, Object>> getSd() {
 		
 		return selectList("servlet.getSd");
+	}
+
+	public List<Map<String, Object>> getSgg(String sd) {
+		return selectList("servlet.getSgg", sd);
 	}
 
 }

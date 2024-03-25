@@ -13,7 +13,14 @@
 		]]>
 	</select>
 	
-	<select id="getSd" resultType="String">
-		SELECT sd_nm FROM tl_sd
+	<select id="getSd" resultType="Map">
+		SELECT id, ufid, sd_cd, sd_nm, divi FROM tl_sd
 	</select>
+	
+	<select id="getSgg" resultType="Map">
+		SELECT id, adm_sect_c, sgg_nm, sgg_oid, col_adm_se, gid, sd_nm, sgg_cd 
+		FROM tl_sgg
+		WHERE sd_nm=#{sd}
+	</select>
+	
 </mapper>

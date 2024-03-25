@@ -6,5 +6,8 @@ import java.util.Map;
 public interface ServletService {
 	String addStringTest(String str) throws Exception;
 
-	List<String> getSd();
+	List<Map<String, Object>> getSd();
+
+	List<Map<String, Object>> getSgg(String sd);
+
 }
