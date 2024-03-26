@@ -23,4 +23,10 @@
 		WHERE sd_nm=#{sd}
 	</select>
 	
+	<select id="getBjd" resultType="Map" >
+		SELECT id, bjd_cd, bjd_nm, sgg_oid, sgg_cd, gid, ele, gas, heat 
+		FROM tl_bjd
+		WHERE sgg_cd=#{sggCode}
+	</select>
+	
 </mapper>

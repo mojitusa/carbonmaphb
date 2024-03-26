@@ -15,13 +15,16 @@
 <script type="text/javascript">
 	$( document ).ready(function() {
 		
+		let cqlFilterSd;
+		
 		//시도
-		var shidoLayer = new ol.layer.Tile({
+		var sdLayer = new ol.layer.Tile({
 			source : new ol.source.TileWMS({
 				url : 'http://localhost:8080/geoserver/carbonmap/wms?service=WMS', // 1. 레이어 URL
 				params : {
 					'VERSION' : '1.1.0', // 2. 버전
 					'LAYERS' : 'carbonmap:tl_sd', // 3. 작업공간:레이어 명
+					'CQL_FILTER': cqlFilterSd,
 					'BBOX' : [1.3871489341071218E7, 3910407.083927817, 1.4680011171788167E7, 4666488.829376997], 
 					'SRS' : 'EPSG:3857', // SRID
 					'FORMAT' : 'image/png' // 포맷
@@ -30,10 +33,10 @@
 			})
 		});
 		
-		shidoLayer.setVisible(false); // 처음에는 레이어를 숨김
+		sdLayer.setVisible(false); // 처음에는 레이어를 숨김
 		
 		//시군구
-		var shigunguLayer = new ol.layer.Tile({
+		var sggLayer = new ol.layer.Tile({
 			source : new ol.source.TileWMS({
 				url : 'http://localhost:8080/geoserver/carbonmap/wms?service=WMS', // 1. 레이어 URL
 				params : {
@@ -47,10 +50,10 @@
 			})
 		});
 		
-		shigunguLayer.setVisible(false); // 처음에는 레이어를 숨김
+		sggLayer.setVisible(false); // 처음에는 레이어를 숨김
 		
 		//법정동
-		var peobjeongdongLayer = new ol.layer.Tile({
+		var bjdLayer = new ol.layer.Tile({
 			source : new ol.source.TileWMS({
 				url : 'http://localhost:8080/geoserver/carbonmap/wms?service=WMS', // 1. 레이어 URL
 				params : {
@@ -64,7 +67,7 @@
 			})
 		});
 		
-		peobjeongdongLayer.setVisible(false); // 처음에는 레이어를 숨김
+		bjdLayer.setVisible(false); // 처음에는 레이어를 숨김
 		
 		let map = new ol.Map({ // OpenLayer의 맵 객체를 생성한다.
 		    target: 'map', // 맵 객체를 연결하기 위한 target으로 <div>의 id값을 지정해준다.
@@ -74,9 +77,7 @@
 		          url: 'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png' // vworld의 지도를 가져온다.
 		        })
 		      }),
-		      shidoLayer,
-		      shigunguLayer,
-		      peobjeongdongLayer
+		      sdLayer, sggLayer, bjdLayer				
 		    ],
 		    view: new ol.View({ // 지도가 보여 줄 중심좌표, 축소, 확대 등을 설정한다. 보통은 줌, 중심좌표를 설정하는 경우가 많다.
 		      center: ol.proj.fromLonLat([128.4, 35.7]),
@@ -86,74 +87,196 @@
 		
 		//map.addLayer(peobjeongdong); // 맵 객체에 레이어를 추가함		
 		
-        $('#toggleShido').click(function () {
-            shidoLayer.setVisible(!shidoLayer.getVisible());
-        });
-
-        $('#toggleShigungu').click(function () {
-            shigunguLayer.setVisible(!shigunguLayer.getVisible());
-        });
-
-        $('#togglePeobjeongdong').click(function () {
-            peobjeongdongLayer.setVisible(!peobjeongdongLayer.getVisible());
-        });
         
-        $('#sdlayerForm').submit(function (event) {
-            event.preventDefault(); // 기본 동작인 폼 전송을 막음
-
-            var selectedLayer = $('#sdlayerSelect').val(); // 선택된 레이어 값
-
-            // 여기에 선택된 레이어에 따라 원하는 동작을 수행하는 코드 추가
-
-            // 예를 들어, 선택된 레이어에 따라 특정 기능을 수행하거나 특정 레이어를 표시하는 코드를 추가할 수 있습니다.
-        });
-        
-        
+        let sdSelected;
+        let sggSelected;
+        let bjdSelected;
         $('#sdLayerSelect').change(function() {
-        	var sdValue = $(this).val();  // 클릭된 항목의 텍스트 값을 가져옵니다.
-        	alert('선택한 값 : ' + sdValue);
-        	console.log('선택한 값 : ' + sdValue);
+        	sdSelected = $(this).val();  // 클릭된 항목의 텍스트 값을 가져옵니다.
+        	alert('시도 선택한 값 : ' + sdSelected);
+        	console.log('시도 선택한 값 : ' + sdSelected);
+ 
+        	// 텍스트에서 sd_cd의 값을 추출
+        	let sd_cd_index = sdSelected.indexOf("sd_cd="); // sd_cd가 시작하는 인덱스
+        	let comma_index = sdSelected.indexOf(",", sd_cd_index); // sd_cd 뒤에 오는 첫 번째 쉼표의 인덱스
+        	let sd_cd_value = sdSelected.slice(sd_cd_index + 6, comma_index); // sd_cd= 다음에 오는 값을 추출
+
+        	console.log(sd_cd_value); // 결과: 28
+        	
+        	
+        	let sd_nm_index = sdSelected.indexOf("sd_nm="); // sd_nm가 시작하는 인덱스
+        	let end_index = sdSelected.indexOf("}", sd_cd_index); // sd_cd 뒤에 오는 }의 인덱스
+        	let sdnm = sdSelected.slice(sd_nm_index + 6, end_index); // sd_cd= 다음에 오는 값을 추출
+        	
+        	console.log('sdnm : ' + sdnm);
+        	
+            if(sdLayer) {
+                map.removeLayer(sdLayer);
+             }        	
+        	
+        	let sdcd = "sd_cd='" + sd_cd_value + "'"; 
+        	
+        	sdLayer = new ol.layer.Tile({
+    			source : new ol.source.TileWMS({
+    				url : 'http://localhost:8080/geoserver/carbonmap/wms?service=WMS', // 1. 레이어 URL
+    				params : {
+    					'VERSION' : '1.1.0', // 2. 버전
+    					'LAYERS' : 'carbonmap:tl_sd', // 3. 작업공간:레이어 명
+    					'CQL_FILTER': sdcd,
+    					'BBOX' : [1.3871489341071218E7, 3910407.083927817, 1.4680011171788167E7, 4666488.829376997], 
+    					'SRS' : 'EPSG:3857', // SRID
+    					'FORMAT' : 'image/png' // 포맷
+    				},
+    				serverType : 'geoserver',
+    			})
+    		}); 
+        	map.addLayer(sdLayer);
+        	sdLayer.setVisible(true);
+            
         	
 			// AJAX를 통해 선택한 값을 컨트롤러로 전송
             $.ajax({
                 type: 'POST',
                 url: '/sdSelect.do',
-                data: { selectedValue: sdValue },
+                data: { selectedValue: sdnm },
                 dataType: 'json',
                 success: function(response) {
-                    var sggList = response;
+                	alert('시도 전송 성공');
+                    console.log(response);
+                    
+                    var ssgList = response; // 서버에서 받은 ssgList
 
                     // sggLayerSelect 업데이트
                     var sggLayerSelect  = $('#sggLayerSelect');
                     
                     var sggLayerList = $('#sgglayerList'); 
                     
-                    $.each(sggList, function(index, item) {
+                    var optionsHTML = ''; // 옵션들을 담을 빈 문자열 생성
+                    $.each(ssgList, function(index, item) {
+                        
+                        console.log(item);
+                        
                         // select 요소에 옵션 추가
-                        console.log(item.sgg_nm);
-                        sggLayerSelect.append($('<option></option>').attr('value', item.ssg_nm).text(item.ssg_nm));
+		                // 띄어쓰기를 기준으로 문자열 분할 후, 마지막 부분 가져오기
+		                var sgg = item.sgg_nm.split(' ').pop();
+                        console.log(sgg);
+                        
+                        
+		                var option = $('<option></option>').attr('value', item.sgg_cd).text(sgg);
+		                sggLayerSelect.append(option); // 새로운 옵션 추가
                         
                         // ul 요소에 리스트 아이템 추가
-                        sggLayerList.append($('<li></li>').attr('id', 'sggLayerItem').text(item.ssg_nm));
+                        sggLayerList.append($('<li></li>').attr('id', 'sggLayerItem').text(sgg).css('display', 'none'));
                         
                     });
                     
-                    console.log(sggList); // 객체를 콘솔에 출력
+                    
+                    console.log(ssgList); // 객체를 콘솔에 출력
                 },
                 error: function(xhr, status, error) {
-                    alert('오류 발생');
+                    alert('시도 오류 발생');
                 }
             });       	
         	
         });
         
         $('#sggLayerSelect').change(function() {
-        	var sggValue = $(this).val();  // 클릭된 항목의 텍스트 값을 가져옵니다.
-        	alert('시군구 선택한 값 : ' + sggValue);
-        	console.log('시군구 선택한 값 : ' + sggValue);
+        	sggSelected = $(this).val();  // 클릭된 항목의 텍스트 값을 가져옵니다.
+        	alert('시군구 선택한 값(코드) : ' + sggSelected);
+        	console.log('시군구 선택한 값(코드) : ' + sggSelected);
+        	
+        	let sggcd = "sgg_cd='" + sggSelected + "'";
+        	
+            if(sggLayer) {
+                map.removeLayer(sggLayer);
+             }  
+        	
+    		//시군구
+    		sggLayer = new ol.layer.Tile({
+    			source : new ol.source.TileWMS({
+    				url : 'http://localhost:8080/geoserver/carbonmap/wms?service=WMS', // 1. 레이어 URL
+    				params : {
+    					'VERSION' : '1.1.0', // 2. 버전
+    					'LAYERS' : 'carbonmap:tl_sgg', // 3. 작업공간:레이어 명
+    					'CQL_FILTER': sggcd,
+    					'BBOX' : [1.386872E7, 3906626.5, 1.4428071E7, 4670269.5], 
+    					'SRS' : 'EPSG:3857', // SRID
+    					'FORMAT' : 'image/png' // 포맷
+    				},
+    				serverType : 'geoserver',
+    			})
+    		});        	
+        	map.addLayer(sggLayer);
+        	sggLayer.setVisible(true);
+        	
+        	
+			// AJAX를 통해 선택한 값을 컨트롤러로 전송
+            $.ajax({
+                type: 'POST',
+                url: '/sggSelect.do',
+                data: { sggCode: sggSelected},
+                dataType: 'json',
+                success: function(response) {
+                	alert('시군구 전송 성공');
+                	console.log(response);
+                    var bjdList = response;
+
+                    // sggLayerSelect 업데이트
+                    var bjdLayerSelect  = $('#bjdLayerSelect');
+                    
+                    var bjdLayerList = $('#bjdlayerList'); 
+                    
+                    var optionsHTML = ''; // 옵션들을 담을 빈 문자열 생성
+                    $.each(bjdList, function(index, item) {
+                        
+                        console.log("법정동 이름 : " + item.bjd_nm);
+                        
+                        // select 요소에 옵션 추가
+					    // 각 옵션의 HTML 문자열을 생성하여 optionsHTML에 추가
+					    optionsHTML += '<option value="' + item.bjd_cd + '">' + item.bjd_nm + '</option>';                        
+                        
+                        // ul 요소에 리스트 아이템 추가
+                        bjdLayerList.append($('<li></li>').attr('id', 'bjdLayerItem').text(item.bjd_nm).css('display' ,'none'));
+                        
+                    });
+                    
+                    // 옵션들을 한 번에 추가
+                    bjdLayerSelect.html(optionsHTML);                    
+                    
+                },
+                error: function(xhr, status, error) {
+                    alert('시군구 오류 발생');
+                }
+            });
+			
         });
-		
-		
+        
+        $('#bjdLayerSelect').change(function() {
+        	
+        	bjdSelected = $(this).val();  // 클릭된 항목의 텍스트 값을 가져옵니다.
+        	
+        	let bjdcd = "bjd_cd='" + bjdSelected + "'";
+        	
+    		//법정동
+    		bjdLayer = new ol.layer.Tile({
+    			source : new ol.source.TileWMS({
+    				url : 'http://localhost:8080/geoserver/carbonmap/wms?service=WMS', // 1. 레이어 URL
+    				params : {
+    					'VERSION' : '1.1.0', // 2. 버전
+    					'LAYERS' : 'carbonmap:tl_bjd', // 3. 작업공간:레이어 명
+    					'CQL_FILTER': bjdcd,
+    					'BBOX' : [1.3873946E7, 3906626.5, 1.4428045E7, 4670269.5], 
+    					'SRS' : 'EPSG:3857', // SRID
+    					'FORMAT' : 'image/png' // 포맷
+    				},
+    				serverType : 'geoserver',
+    			})
+    		});
+        	map.addLayer(bjdLayer);
+        	bjdLayer.setVisible(true);
+    		
+        });
+        
 		
 	});
 
@@ -167,12 +290,6 @@
       height: 1030px;
       width: 100%;
     }
-    
-    .toggle-button {
-        position: absolute;
-        z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */
-    }    
-    
 
     #sdLayerSelect {
         top: 50px; /* 시도 레이어 토글 버튼의 위치 */
@@ -188,9 +305,12 @@
         z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */
     }
 
-    #togglePeobjeongdong {
+    #bjdLayerSelect {
         top:110px; /* 법정동 레이어 토글 버튼의 위치 */
         left: 50px; 
+        position: absolute;
+        z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */        
+        
     }
   </style>
 </head>
@@ -200,8 +320,9 @@
 	</div>
 	<form id="sdlayerForm">
 		<select id="sdLayerSelect" name="sdSelectLayer" >
+			<option value="default" selected>시도 선택</option> <!-- 기본값을 설정합니다. -->
             <c:forEach items="${sdList}" var="item">
-                <option value="${item.sd_nm}">${item.sd_nm}</option>
+                <option value="${item}">${item.sd_nm}</option>
             </c:forEach>			
 		</select>
 		<ul id="sdlayerList">
@@ -211,21 +332,25 @@
 		</ul>
 		<input type="hidden" id="sdSelectedLayer" name="sdSelectedLayer">
 	</form>
-	
-	
 
 	<form id="sgglayerForm">
 		<select id="sggLayerSelect" name="sggSelectLayer" >
+			<option value="default" selected>시군구 선택</option> <!-- 기본값을 설정합니다. -->
 		</select>
 		<ul id="sgglayerList">
 		</ul>
 		<input type="hidden" id="sggSelectedLayer" name="sggSelectedLayer">
 	</form>	
 	
+	<form id="bjdlayerForm">
+		<select id="bjdLayerSelect" name="bjdSelectLayer" >
+			<option value="default" selected>법정동 선택</option> <!-- 기본값을 설정합니다. -->
+		</select>
+		<ul id="bjdlayerList">
+		</ul>
+		<input type="hidden" id="bjdSSelectedLayer" name="bjdSelectedLayer">
+	</form>	
 	
-	<button id="toggleShido" class="toggle-button">시도 레이어 토글</button>
-	<button id="toggleShigungu" class="toggle-button">시군구 레이어 토글</button>
-	<button id="togglePeobjeongdong" class="toggle-button">법정동 레이어 토글</button>
 	
 	
 	

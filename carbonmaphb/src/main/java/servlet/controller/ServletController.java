@@ -1,6 +1,7 @@
 package servlet.controller;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,53 +25,93 @@ import servlet.service.ServletService;
 public class ServletController {
 	@Resource(name = "ServletService")
 	private ServletService servletService;
-	
+
 	@RequestMapping(value = "/main.do")
 	public String mainTest(ModelMap model) throws Exception {
 		System.out.println("sevController.java - mainTest()");
-		
+
 		String str = servletService.addStringTest("START! ");
 		model.addAttribute("resultStr", str);
-		
+
 		return "main/main";
 	}
-	
+
 	@RequestMapping(value = "/carbonmap.do")
 	public String mapMap(Model model) {
-		 
-		List<Map<String, Object>> sd= new ArrayList<>();
-		
-		sd  = servletService.getSd();
-		
+
+		List<Map<String, Object>> sd = new ArrayList<>();
+
+		sd = servletService.getSd();
+
 		System.out.println(sd);
 		model.addAttribute("sdList", sd);
-		
+
 		return "carbonmap";
 	}
-	
+
 	@RequestMapping(value = "sdSelect.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@ResponseBody
-	public String sdSelect(@RequestParam("selectedValue")  String sd) {
-	    System.out.println(sd);
-	    System.out.println("값이 들어왔어요.");
-	    
-	    List<Map<String, Object>> sgg= new ArrayList<>();
-	    sgg = servletService.getSgg(sd);
-	    System.out.println(sgg);
-	    
-	    // ObjectMapper를 사용하여 리스트를 JSON 문자열로 변환
-	    ObjectMapper objectMapper = new ObjectMapper();
-	    String jsonSggList = null;	  
-	    
-	    try {
+	public String sdSelect(@RequestParam("selectedValue") String sd) {
+		System.out.println(sd);
+		System.out.println("시도 값이 들어왔어요.");
+
+		List<Map<String, Object>> sgg = new ArrayList<>();
+		sgg = servletService.getSgg(sd);
+		System.out.println(sgg);
+
+		// ObjectMapper를 사용하여 리스트를 JSON 문자열로 변환
+		ObjectMapper objectMapper = new ObjectMapper();
+		String jsonSggList = null;
+
+		try {
 			jsonSggList = objectMapper.writeValueAsString(sgg);
+			System.out.println("JSON 형태로 변환된 sggList: " + jsonSggList);
+
+//			// JSON 문자열을 Java 객체로 변환하여 sgg_nm 필드 값만 포함하는 새로운 리스트 생성
+//			List<String> sggNames = new ArrayList<>();
+//
+//			for (Map<String, Object> item : sgg) {
+//				sggNames.add((String) item.get("sgg_nm"));
+//			}
+//
+//			// 새로운 리스트를 JSON으로 변환
+//			jsonSggList = objectMapper.writeValueAsString(sggNames);
+
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return jsonSggList;
+	}
+
+	@RequestMapping(value = "sggSelect.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@ResponseBody
+	public String sggSelect(@RequestParam("sggCode") String sggCode, Model model) {
+		
+		System.out.println(sggCode);
+		System.out.println("시군구 값이 들어왔어요.");
+		
+		List<Map<String, Object>> bjd = new ArrayList<>();
+		bjd = servletService.getbjd(sggCode);
+		System.out.println(bjd);
+	    
+		// ObjectMapper를 사용하여 리스트를 JSON 문자열로 변환
+		ObjectMapper objectMapper = new ObjectMapper();
+	    String jsonBjdList = null;
+	    
+		try {
+			jsonBjdList = objectMapper.writeValueAsString(bjd);
+			System.out.println("JSON 형태로 변환된 bjdList: " + jsonBjdList);
+
 		} catch (JsonProcessingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	    
-	    
-	    return jsonSggList;
+
+		return jsonBjdList;
+
 	}
-	
+
 }

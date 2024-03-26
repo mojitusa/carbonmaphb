@@ -34,4 +34,9 @@ public class ServletImpl extends EgovAbstractServiceImpl implements ServletServi
 		return dao.getSgg(sd);
 	}
 
+	@Override
+	public List<Map<String, Object>> getbjd(String sgg) {
+		return dao.getbjd(sgg);
+	}
+
 }
