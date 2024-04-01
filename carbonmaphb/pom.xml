@@ -210,7 +210,7 @@
             <artifactId>ojdbc</artifactId>
             <version>14</version>
             <scope>system</scope>
-            <systemPath>${basedir}/src/main/webapp/WEB-INF/lib/ojdbc-14.jar</systemPath>
+            <systemPath>${basedir}/src/main/Gapp/WEB-INF/lib/ojdbc-14.jar</systemPath>
         </dependency>
         -->
 	</dependencies>

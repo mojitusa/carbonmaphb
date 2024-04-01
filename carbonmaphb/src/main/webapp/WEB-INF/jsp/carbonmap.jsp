@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -91,6 +92,9 @@
         let sdSelected;
         let sggSelected;
         let bjdSelected;
+        
+        let sdnm
+        
         $('#sdLayerSelect').change(function() {
         	sdSelected = $(this).val();  // 클릭된 항목의 텍스트 값을 가져옵니다.
         	alert('시도 선택한 값 : ' + sdSelected);
@@ -106,15 +110,18 @@
         	
         	let sd_nm_index = sdSelected.indexOf("sd_nm="); // sd_nm가 시작하는 인덱스
         	let end_index = sdSelected.indexOf("}", sd_cd_index); // sd_cd 뒤에 오는 }의 인덱스
-        	let sdnm = sdSelected.slice(sd_nm_index + 6, end_index); // sd_cd= 다음에 오는 값을 추출
+        	sdnm = sdSelected.slice(sd_nm_index + 6, end_index); // sd_cd= 다음에 오는 값을 추출
         	
         	console.log('sdnm : ' + sdnm);
         	
-            if(sdLayer) {
+            if(sdLayer || sggLayer || bjdLayer) {
                 map.removeLayer(sdLayer);
+                map.removeLayer(sggLayer);
+                map.removeLayer(bjdLayer);
              }        	
         	
-        	let sdcd = "sd_cd='" + sd_cd_value + "'"; 
+        	let sdName = "sd_nm='" + sdnm + "'";
+        	let sdCode = "sd='" + sd_cd_value + "'";
         	
         	sdLayer = new ol.layer.Tile({
     			source : new ol.source.TileWMS({
@@ -122,7 +129,7 @@
     				params : {
     					'VERSION' : '1.1.0', // 2. 버전
     					'LAYERS' : 'carbonmap:tl_sd', // 3. 작업공간:레이어 명
-    					'CQL_FILTER': sdcd,
+    					'CQL_FILTER': sdName,
     					'BBOX' : [1.3871489341071218E7, 3910407.083927817, 1.4680011171788167E7, 4666488.829376997], 
     					'SRS' : 'EPSG:3857', // SRID
     					'FORMAT' : 'image/png' // 포맷
@@ -145,11 +152,19 @@
                     console.log(response);
                     
                     var ssgList = response; // 서버에서 받은 ssgList
+                    
 
                     // sggLayerSelect 업데이트
                     var sggLayerSelect  = $('#sggLayerSelect');
                     
-                    var sggLayerList = $('#sgglayerList'); 
+                    var sggLayerList = $('#sgglayerList');
+                    
+                    // sggLayerSelect 업데이트 전에 비우기
+                    sggLayerSelect.empty();
+                    sggLayerList.empty();
+                    console.log("전체 선택 : " + sdSelected.sd_nm);
+                    sggLayerSelect.append($('<option></option>').text('시군구 선택').val('')); // 기본값 추가
+                    sggLayerSelect.append($('<option></option>').attr('value', '시도 전체 선택').text('전체 선택'));
                     
                     var optionsHTML = ''; // 옵션들을 담을 빈 문자열 생성
                     $.each(ssgList, function(index, item) {
@@ -158,11 +173,12 @@
                         
                         // select 요소에 옵션 추가
 		                // 띄어쓰기를 기준으로 문자열 분할 후, 마지막 부분 가져오기
-		                var sgg = item.sgg_nm.split(' ').pop();
+		               	let indexOfSpace = item.sgg_nm.indexOf(' ');
+						let sgg = indexOfSpace !== -1 ? item.sgg_nm.substring(indexOfSpace + 1) : item.sgg_nm;
                         console.log(sgg);
                         
                         
-		                var option = $('<option></option>').attr('value', item.sgg_cd).text(sgg);
+		                var option = $('<option></option>').attr('value', item.sgg_nm).text(sgg);
 		                sggLayerSelect.append(option); // 새로운 옵션 추가
                         
                         // ul 요소에 리스트 아이템 추가
@@ -182,27 +198,36 @@
         
         $('#sggLayerSelect').change(function() {
         	sggSelected = $(this).val();  // 클릭된 항목의 텍스트 값을 가져옵니다.
-        	alert('시군구 선택한 값(코드) : ' + sggSelected);
-        	console.log('시군구 선택한 값(코드) : ' + sggSelected);
+        	alert('시군구 선택한 값 : ' + sggSelected);
+        	console.log('시군구 선택한 값 : ' + sggSelected);
         	
-        	let sggcd = "sgg_cd='" + sggSelected + "'";
+            let params = {
+                    'VERSION': '1.1.0',
+                    'LAYERS': 'carbonmap:sgg_carbon_d2',
+                    'BBOX': [1.386872E7, 3906626.5, 1.4428071E7, 4670269.5],
+                    'SRS': 'EPSG:3857',
+                    'FORMAT': 'image/png'
+                };        	
         	
-            if(sggLayer) {
+        	if (sggSelected == '시도 전체 선택') {
+        		console.log("sd_nm='" + sdSelected.sd_nm + "'");
+        		params['CQL_FILTER'] = "sd_nm='" + sdnm + "'";
+        		
+        	} else {
+        		params['CQL_FILTER'] = "sgg_nm LIKE '%" + sggSelected + "%'";
+        		
+        	}
+	        	
+            if(sggLayer || bjdLayer) {
                 map.removeLayer(sggLayer);
+                map.removeLayer(bjdLayer);
              }  
         	
     		//시군구
     		sggLayer = new ol.layer.Tile({
     			source : new ol.source.TileWMS({
     				url : 'http://localhost:8080/geoserver/carbonmap/wms?service=WMS', // 1. 레이어 URL
-    				params : {
-    					'VERSION' : '1.1.0', // 2. 버전
-    					'LAYERS' : 'carbonmap:tl_sgg', // 3. 작업공간:레이어 명
-    					'CQL_FILTER': sggcd,
-    					'BBOX' : [1.386872E7, 3906626.5, 1.4428071E7, 4670269.5], 
-    					'SRS' : 'EPSG:3857', // SRID
-    					'FORMAT' : 'image/png' // 포맷
-    				},
+    				params: params,
     				serverType : 'geoserver',
     			})
     		});        	
@@ -214,7 +239,7 @@
             $.ajax({
                 type: 'POST',
                 url: '/sggSelect.do',
-                data: { sggCode: sggSelected},
+                data: { sggName: sggSelected},
                 dataType: 'json',
                 success: function(response) {
                 	alert('시군구 전송 성공');
@@ -226,7 +251,15 @@
                     
                     var bjdLayerList = $('#bjdlayerList'); 
                     
+                    // sggLayerSelect 업데이트 전에 비우기
+                    bjdLayerSelect.empty();
+                    bjdLayerList.empty();
+                    
                     var optionsHTML = ''; // 옵션들을 담을 빈 문자열 생성
+                    optionsHTML += '<option>' + '법정동 선택' + '</option>';
+                    console.log(sggSelected);
+                    optionsHTML += '<option value="' + sggSelected + '">' + '전체 선택' + '</option>';
+                    
                     $.each(bjdList, function(index, item) {
                         
                         console.log("법정동 이름 : " + item.bjd_nm);
@@ -249,33 +282,76 @@
                 }
             });
 			
+			
         });
         
+        let params;
         $('#bjdLayerSelect').change(function() {
         	
-        	bjdSelected = $(this).val();  // 클릭된 항목의 텍스트 값을 가져옵니다.
-        	
-        	let bjdcd = "bjd_cd='" + bjdSelected + "'";
+        	bjdSelected = $(this).val();  // 클릭된 항목의 value 값을 가져옵니다.
+       		console.log(bjdSelected);
+       		console.log(sggSelected);
+       		
+   			params = {
+				'VERSION' : '1.1.0', // 2. 버전
+				'LAYERS' : 'carbonmap:tl_bjd', // 3. 작업공간:레이어 명
+				'BBOX' : [1.3873946E7, 3906626.5, 1.4428045E7, 4670269.5], 
+				'SRS' : 'EPSG:3857', // SRID
+				'FORMAT' : 'image/png' // 포맷    
+   			};   		
+       		
+       		if (bjdSelected == sggSelected) {
+       			
+       	        // AJAX를 통해 선택된 값을 컨트롤러로 전송
+       	        $.ajax({
+       	            type: 'POST',
+       	            url: '/getSggcd.do',
+       	            data: { sgg: bjdSelected }, // 선택된 값 전송
+       	            dataType: 'text',
+       	            success: function(response) {
+       	            	console.log(response);
+       	                let scode = JSON.parse(response);
+       	                console.log('성공');
+	       	             // AJAX 요청이 성공하고 서버에서 반환된 값을 받은 후에 CQL_FILTER 설정
+	       	             params['CQL_FILTER'] = "sgg_cd='" + scode + "'";
+	       	             // 설정된 필터값을 확인하기 위해 로그 추가
+	       	             console.log('CQL_FILTER 설정됨:', params['CQL_FILTER']);
+	       	             // 성공하면 함수 호출
+	       	          	 handleAjaxSuccess();
+	       	            	
+       	            },
+       	            error: function(xhr, status, error) {
+       	                // 에러 처리
+       	                console.error('에러');
+       	            }
+       	        });	
+       			
+       		} else {
+       			params['CQL_FILTER'] = "bjd_cd='" + bjdSelected + "'";
+       		 	handleAjaxSuccess();
+       		}
+        });
+        
+        function handleAjaxSuccess() {
+            console.log('AJAX 요청 성공');
+        
+       		
+            if(bjdLayer) {
+                map.removeLayer(bjdLayer);
+             } 
         	
     		//법정동
     		bjdLayer = new ol.layer.Tile({
     			source : new ol.source.TileWMS({
     				url : 'http://localhost:8080/geoserver/carbonmap/wms?service=WMS', // 1. 레이어 URL
-    				params : {
-    					'VERSION' : '1.1.0', // 2. 버전
-    					'LAYERS' : 'carbonmap:tl_bjd', // 3. 작업공간:레이어 명
-    					'CQL_FILTER': bjdcd,
-    					'BBOX' : [1.3873946E7, 3906626.5, 1.4428045E7, 4670269.5], 
-    					'SRS' : 'EPSG:3857', // SRID
-    					'FORMAT' : 'image/png' // 포맷
-    				},
+    				params: params,
     				serverType : 'geoserver',
     			})
     		});
         	map.addLayer(bjdLayer);
         	bjdLayer.setVisible(true);
     		
-        });
+        };
         
 		
 	});
@@ -350,7 +426,6 @@
 		</ul>
 		<input type="hidden" id="bjdSSelectedLayer" name="bjdSelectedLayer">
 	</form>	
-	
 	
 	
 	

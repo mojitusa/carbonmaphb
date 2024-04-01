@@ -48,7 +48,7 @@ public class ServletController {
 
 		return "carbonmap";
 	}
-
+	
 	@RequestMapping(value = "sdSelect.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@ResponseBody
 	public String sdSelect(@RequestParam("selectedValue") String sd) {
@@ -87,13 +87,13 @@ public class ServletController {
 
 	@RequestMapping(value = "sggSelect.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@ResponseBody
-	public String sggSelect(@RequestParam("sggCode") String sggCode, Model model) {
+	public String sggSelect(@RequestParam("sggName") String sggnm, Model model) {
 		
-		System.out.println(sggCode);
+		System.out.println(sggnm);
 		System.out.println("시군구 값이 들어왔어요.");
 		
 		List<Map<String, Object>> bjd = new ArrayList<>();
-		bjd = servletService.getbjd(sggCode);
+		bjd = servletService.getbjd(sggnm);
 		System.out.println(bjd);
 	    
 		// ObjectMapper를 사용하여 리스트를 JSON 문자열로 변환
@@ -108,10 +108,15 @@ public class ServletController {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	    
-
 		return jsonBjdList;
-
+	}
+	
+	@RequestMapping(value = "getSggcd.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@ResponseBody
+	public String getSggcd(@RequestParam("sgg") String sgg) {
+		String sggCode = servletService.getSggCode(sgg);
+		
+		return sggCode;
 	}
 
 }

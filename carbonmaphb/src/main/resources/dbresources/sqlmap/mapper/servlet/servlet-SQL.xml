@@ -26,7 +26,13 @@
 	<select id="getBjd" resultType="Map" >
 		SELECT id, bjd_cd, bjd_nm, sgg_oid, sgg_cd, gid, ele, gas, heat 
 		FROM tl_bjd
-		WHERE sgg_cd=#{sggCode}
+		WHERE sgg_cd=(
+			SELECT sgg_cd FROM tl_sgg WHERE sgg_nm=#{sggnm}
+		)
+	</select>
+	
+	<select id="getSggCode" resultType="String">
+		SELECT sgg_cd FROM tl_sgg WHERE sgg_nm=#{sgg}
 	</select>
 	
 </mapper>

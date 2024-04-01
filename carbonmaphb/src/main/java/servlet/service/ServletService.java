@@ -10,6 +10,8 @@ public interface ServletService {
 
 	List<Map<String, Object>> getSgg(String sd);
 
-	List<Map<String, Object>> getbjd(String sggCode);
+	List<Map<String, Object>> getbjd(String sggnm);
+
+	String getSggCode(String sgg);
 
 }
