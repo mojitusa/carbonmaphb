@@ -14,4 +14,8 @@ public interface ServletService {
 
 	String getSggCode(String sgg);
 
+	Map<String, Object> selectGeom(String sd);
+
+	Map<String, Object> selectSggGeo(String sggnm);
+
 }

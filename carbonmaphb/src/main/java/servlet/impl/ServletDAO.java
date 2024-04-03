@@ -37,4 +37,12 @@ public class ServletDAO extends EgovComAbstractDAO {
 		return selectOne("servlet.getSggCode", sgg);
 	}
 
+	public Map<String, Object> selectGeom(String sd) {
+		return selectOne("servlet.selectSdGeo", sd);
+	}
+	
+	public Map<String, Object> selectSggGeo(String sgg) {
+		return selectOne("servlet.selectSggGeo", sgg);
+	}
+
 }

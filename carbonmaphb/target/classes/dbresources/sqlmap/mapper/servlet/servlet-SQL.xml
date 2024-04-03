@@ -15,24 +15,43 @@
 	
 	<select id="getSd" resultType="Map">
 		SELECT id, ufid, sd_cd, sd_nm, divi FROM tl_sd
+		ORDER BY sd_cd
 	</select>
 	
 	<select id="getSgg" resultType="Map">
 		SELECT id, adm_sect_c, sgg_nm, sgg_oid, col_adm_se, gid, sd_nm, sgg_cd 
 		FROM tl_sgg
 		WHERE sd_nm=#{sd}
+		ORDER BY col_adm_se
+		
 	</select>
 	
 	<select id="getBjd" resultType="Map" >
 		SELECT id, bjd_cd, bjd_nm, sgg_oid, sgg_cd, gid, ele, gas, heat 
 		FROM tl_bjd
-		WHERE sgg_cd=(
-			SELECT sgg_cd FROM tl_sgg WHERE sgg_nm=#{sggnm}
+		WHERE SUBSTRING(sgg_cd, 1, 4) = (
+			SELECT SUBSTRING(col_adm_se, 1, 4) FROM tl_sgg WHERE sgg_nm=#{sggnm}
 		)
+		ORDER BY bjd_cd
 	</select>
 	
 	<select id="getSggCode" resultType="String">
 		SELECT sgg_cd FROM tl_sgg WHERE sgg_nm=#{sgg}
 	</select>
 	
+    <select id="selectSdGeo" parameterType="String" resultType="Map">
+      select (select ST_XMax(geom) as xmax FROM tl_sd WHERE sd_nm = #{sido}::varchar order by xmax desc limit 1)
+      ,(select ST_YMax(geom) as ymax FROM tl_sd WHERE  sd_nm = #{sido}::varchar order by ymax desc limit 1)
+      ,(select  ST_XMin(geom) as xmin FROM tl_sd WHERE  sd_nm = #{sido}::varchar order by xmin  limit 1)
+      ,(select ST_YMin(geom) as ymin FROM tl_sd WHERE  sd_nm = #{sido}::varchar order by ymin limit 1)
+          from tl_sd limit 1
+   	</select>	
+	
+   <select id="selectSggGeo" parameterType="String" resultType="Map">
+      select (select ST_XMax(geom) as xmax FROM tl_sgg WHERE sgg_nm = #{sgg}::varchar order by xmax desc limit 1)
+      ,(select ST_YMax(geom) as ymax FROM tl_sgg WHERE  sgg_nm = #{sgg}::varchar order by ymax desc limit 1)
+      ,(select  ST_XMin(geom) as xmin FROM tl_sgg WHERE  sgg_nm = #{sgg}::varchar order by xmin  limit 1)
+      ,(select ST_YMin(geom) as ymin FROM tl_sgg WHERE  sgg_nm = #{sgg}::varchar order by ymin limit 1)
+          from tl_sd limit 1
+   </select>
 </mapper>

@@ -95,10 +95,27 @@
         
         let sdnm
         
+        let sggList
+        
+        let sggs_nm;
+        let sggs_cd;
+        
+        let sdName
+        
         $('#sdLayerSelect').change(function() {
         	sdSelected = $(this).val();  // 클릭된 항목의 텍스트 값을 가져옵니다.
         	alert('시도 선택한 값 : ' + sdSelected);
         	console.log('시도 선택한 값 : ' + sdSelected);
+        	
+        	var sggLayerSelect  = $('#sggLayerSelect');
+        	var bjdLayerSelect  = $('#bjdLayerSelect');
+        	
+        	sggLayerSelect.empty();
+        	bjdLayerSelect.empty();
+        	sggLayerSelect.append($('<option></option>').text('시군구 선택').val(''));
+        	bjdLayerSelect.append($('<option></option>').text('법정동 선택').val(''));
+        	
+        	
  
         	// 텍스트에서 sd_cd의 값을 추출
         	let sd_cd_index = sdSelected.indexOf("sd_cd="); // sd_cd가 시작하는 인덱스
@@ -120,7 +137,7 @@
                 map.removeLayer(bjdLayer);
              }        	
         	
-        	let sdName = "sd_nm='" + sdnm + "'";
+        	sdName = "sd_nm='" + sdnm + "'";
         	let sdCode = "sd='" + sd_cd_value + "'";
         	
         	sdLayer = new ol.layer.Tile({
@@ -128,11 +145,11 @@
     				url : 'http://localhost:8080/geoserver/carbonmap/wms?service=WMS', // 1. 레이어 URL
     				params : {
     					'VERSION' : '1.1.0', // 2. 버전
-    					'LAYERS' : 'carbonmap:tl_sd', // 3. 작업공간:레이어 명
+    					'LAYERS' : 'carbonmap:sgg_carbon_d2', // 3. 작업공간:레이어 명
     					'CQL_FILTER': sdName,
-    					'BBOX' : [1.3871489341071218E7, 3910407.083927817, 1.4680011171788167E7, 4666488.829376997], 
+    					'BBOX' : [1.386872E7, 3906626.5, 1.4428071E7, 4670269.5], 
     					'SRS' : 'EPSG:3857', // SRID
-    					'FORMAT' : 'image/png' // 포맷
+    					'FORMAT' : 'image/png', // 포맷
     				},
     				serverType : 'geoserver',
     			})
@@ -149,10 +166,13 @@
                 dataType: 'json',
                 success: function(response) {
                 	alert('시도 전송 성공');
-                    console.log(response);
                     
-                    var ssgList = response; // 서버에서 받은 ssgList
+                    sggList = JSON.parse(response.sggList); // 서버에서 받은 sggList
+                    let geoSgg = response.sggGeo;
+                    console.log("sggList : " + sggList);
                     
+                    //zoom
+                    map.getView().fit([geoSgg.xmin, geoSgg.ymin, geoSgg.xmax, geoSgg.ymax], {duation : 900});  
 
                     // sggLayerSelect 업데이트
                     var sggLayerSelect  = $('#sggLayerSelect');
@@ -167,9 +187,7 @@
                     sggLayerSelect.append($('<option></option>').attr('value', '시도 전체 선택').text('전체 선택'));
                     
                     var optionsHTML = ''; // 옵션들을 담을 빈 문자열 생성
-                    $.each(ssgList, function(index, item) {
-                        
-                        console.log(item);
+                    $.each(sggList, function(index, item) {
                         
                         // select 요소에 옵션 추가
 		                // 띄어쓰기를 기준으로 문자열 분할 후, 마지막 부분 가져오기
@@ -187,7 +205,7 @@
                     });
                     
                     
-                    console.log(ssgList); // 객체를 콘솔에 출력
+                    console.log(sggList); // 객체를 콘솔에 출력
                 },
                 error: function(xhr, status, error) {
                     alert('시도 오류 발생');
@@ -203,25 +221,55 @@
         	
             let params = {
                     'VERSION': '1.1.0',
-                    'LAYERS': 'carbonmap:sgg_carbon_d2',
+                    'LAYERS': 'carbonmap:tl_bjd',
                     'BBOX': [1.386872E7, 3906626.5, 1.4428071E7, 4670269.5],
                     'SRS': 'EPSG:3857',
                     'FORMAT': 'image/png'
-                };        	
+                }; 
+          	let sdParams = {
+					'VERSION' : '1.1.0', // 2. 버전
+					'LAYERS' : 'carbonmap:sgg_carbon_d2', // 3. 작업공간:레이어 명
+					'BBOX' : [1.386872E7, 3906626.5, 1.4428071E7, 4670269.5], 
+					'CQL_FILTER': sdName,
+					'SRS' : 'EPSG:3857', // SRID
+					'FORMAT' : 'image/png', // 포맷
+          	}
         	
         	if (sggSelected == '시도 전체 선택') {
         		console.log("sd_nm='" + sdSelected.sd_nm + "'");
         		params['CQL_FILTER'] = "sd_nm='" + sdnm + "'";
         		
         	} else {
-        		params['CQL_FILTER'] = "sgg_nm LIKE '%" + sggSelected + "%'";
+        		
+            	sggList.forEach(function(map) {
+                    if (map.sgg_nm === sggSelected) {
+                    	sggs_cd = map.adm_sect_c;
+                    }
+                });        		
+        		
+        		params['CQL_FILTER'] = "sgg_cd LIKE '" + sggs_cd + "%'";
+        		alert('params : ' + params['CQL_FILTER']);
+        		
+        		// 시군구 레이어를 경계로 바꿈
+        		sdParams['STYLES'] = 'sgg_d2_ol';
         		
         	}
 	        	
-            if(sggLayer || bjdLayer) {
+            if(sdLayer || sggLayer || bjdLayer) {
+                map.removeLayer(sdLayer);
                 map.removeLayer(sggLayer);
                 map.removeLayer(bjdLayer);
              }  
+            
+            //시도
+            sdLayer = new ol.layer.Tile({
+    			source : new ol.source.TileWMS({
+    				url : 'http://localhost:8080/geoserver/carbonmap/wms?service=WMS', // 1. 레이어 URL
+    				params : sdParams,
+    				serverType : 'geoserver',
+    			})
+    		});
+        	map.addLayer(sdLayer);
         	
     		//시군구
     		sggLayer = new ol.layer.Tile({
@@ -235,6 +283,8 @@
         	sggLayer.setVisible(true);
         	
         	
+        	
+        	
 			// AJAX를 통해 선택한 값을 컨트롤러로 전송
             $.ajax({
                 type: 'POST',
@@ -243,9 +293,14 @@
                 dataType: 'json',
                 success: function(response) {
                 	alert('시군구 전송 성공');
-                	console.log(response);
-                    var bjdList = response;
-
+                    var bjdList = JSON.parse(response.bjdList);
+                    
+                    let bjdGeo = response.bjdGeo;
+                    
+                    if( bjdGeo != null) {
+	                    map.getView().fit([bjdGeo.xmin, bjdGeo.ymin, bjdGeo.xmax, bjdGeo.ymax], {duation : 900}); 
+                    }
+                    
                     // sggLayerSelect 업데이트
                     var bjdLayerSelect  = $('#bjdLayerSelect');
                     
@@ -302,43 +357,29 @@
        		
        		if (bjdSelected == sggSelected) {
        			
-       	        // AJAX를 통해 선택된 값을 컨트롤러로 전송
-       	        $.ajax({
-       	            type: 'POST',
-       	            url: '/getSggcd.do',
-       	            data: { sgg: bjdSelected }, // 선택된 값 전송
-       	            dataType: 'text',
-       	            success: function(response) {
-       	            	console.log(response);
-       	                let scode = JSON.parse(response);
-       	                console.log('성공');
-	       	             // AJAX 요청이 성공하고 서버에서 반환된 값을 받은 후에 CQL_FILTER 설정
-	       	             params['CQL_FILTER'] = "sgg_cd='" + scode + "'";
-	       	             // 설정된 필터값을 확인하기 위해 로그 추가
-	       	             console.log('CQL_FILTER 설정됨:', params['CQL_FILTER']);
-	       	             // 성공하면 함수 호출
-	       	          	 handleAjaxSuccess();
-	       	            	
-       	            },
-       	            error: function(xhr, status, error) {
-       	                // 에러 처리
-       	                console.error('에러');
-       	            }
-       	        });	
-       			
+            	sggList.forEach(function(map) {
+                    if (map.sgg_nm === sggSelected) {
+                    	sggs_cd = map.sgg_cd;
+                    }
+                });
+            	
+            	console.log("시군구 비교해서 뽑아낸 코드 : " + sggs_cd);
+            	
+            	params['CQL_FILTER'] = "sgg_cd LIKE '" + sggs_cd.substring(0, 4) + "%'";
+            	
+                if(sggLayer || bjdLayer) {
+                    map.removeLayer(sggLayer);
+                    map.removeLayer(bjdLayer);
+                }
+       	     	
        		} else {
        			params['CQL_FILTER'] = "bjd_cd='" + bjdSelected + "'";
-       		 	handleAjaxSuccess();
+       			
+                if(sdLayer || bjdLayer) {
+                    map.removeLayer(sdLayer);
+                    map.removeLayer(bjdLayer);
+                }
        		}
-        });
-        
-        function handleAjaxSuccess() {
-            console.log('AJAX 요청 성공');
-        
-       		
-            if(bjdLayer) {
-                map.removeLayer(bjdLayer);
-             } 
         	
     		//법정동
     		bjdLayer = new ol.layer.Tile({
@@ -350,11 +391,51 @@
     		});
         	map.addLayer(bjdLayer);
         	bjdLayer.setVisible(true);
-    		
-        };
+       		
+        });
         
+    	// 1. 지도 이벤트 리스너 설정
+    	map.on('singleclick', function(evt) {
+    	    // 2. 클릭한 지점의 좌표를 가져옴
+    	    var coordinate = evt.coordinate;
+    	    
+    	    // 3. 해당 좌표에서의 지리적 정보를 가져오는 요청을 서버에 보냄
+    	    var featureRequest = new ol.format.WFS().writeGetFeature({
+    	        srsName: 'EPSG:3857',
+    	        featureNS: 'http://localhost:8080/geoserver/carbonmap',
+    	        featurePrefix: 'carbonmap',
+    	        featureTypes: ['sgg_carbon_d2'],
+    	        outputFormat: 'application/json',
+    	        geometryName: 'geom',
+    	        filter: new ol.format.filter.Intersects('geom', new ol.geom.Point(coordinate))
+    	    });
+    	    
+    	    // 서버에 요청 보내기
+    	    fetch('http://localhost:8080/geoserver/carbonmap/wfs', {
+    	        method: 'POST',
+    	        body: new XMLSerializer().serializeToString(featureRequest)
+    	    })
+    	    .then(function(response) {
+    	        return response.json();
+    	    })
+    	    .then(function(json) {
+    	        // 4. 가져온 정보에서 단계 구분 값을 추출하여 사용자에게 표시
+    	        if (json.features.length > 0) {
+    	            var properties = json.features[0].properties;
+    	            var sgg_cd = properties['sgg_pu']; // 예시: 구분 값의 키가 'sgg_cd'라 가정
+    	            alert('클릭한 구역의 단계 구분 값: ' + sgg_pu);
+    	        } else {
+    	            alert('클릭한 지점에 대한 정보를 찾을 수 없습니다.');
+    	        }
+    	    });
+    	});        
 		
 	});
+	
+
+
+
+
 
 </script>
 <style> 

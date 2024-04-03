@@ -51,14 +51,14 @@ public class ServletController {
 	
 	@RequestMapping(value = "sdSelect.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@ResponseBody
-	public String sdSelect(@RequestParam("selectedValue") String sd) {
+	public Map<String, Object> sdSelect(@RequestParam("selectedValue") String sd) {
 		System.out.println(sd);
 		System.out.println("시도 값이 들어왔어요.");
 
 		List<Map<String, Object>> sgg = new ArrayList<>();
 		sgg = servletService.getSgg(sd);
-		System.out.println(sgg);
-
+		Map<String, Object> geom = servletService.selectGeom(sd);
+		
 		// ObjectMapper를 사용하여 리스트를 JSON 문자열로 변환
 		ObjectMapper objectMapper = new ObjectMapper();
 		String jsonSggList = null;
@@ -81,20 +81,24 @@ public class ServletController {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		Map<String,Object> res = new HashMap<>();
+		res.put("sggList", jsonSggList);
+		res.put("sggGeo", geom);
 
-		return jsonSggList;
+		return res;
 	}
 
 	@RequestMapping(value = "sggSelect.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@ResponseBody
-	public String sggSelect(@RequestParam("sggName") String sggnm, Model model) {
+	public Map<String,Object> sggSelect(@RequestParam("sggName") String sggnm, Model model) {
 		
 		System.out.println(sggnm);
 		System.out.println("시군구 값이 들어왔어요.");
 		
 		List<Map<String, Object>> bjd = new ArrayList<>();
 		bjd = servletService.getbjd(sggnm);
-		System.out.println(bjd);
+		Map<String, Object> geom = servletService.selectSggGeo(sggnm);
 	    
 		// ObjectMapper를 사용하여 리스트를 JSON 문자열로 변환
 		ObjectMapper objectMapper = new ObjectMapper();
@@ -108,7 +112,12 @@ public class ServletController {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return jsonBjdList;
+		
+		Map<String,Object> res = new HashMap<>();
+		res.put("bjdList", jsonBjdList);
+		res.put("bjdGeo", geom);		
+		
+		return res;
 	}
 	
 	@RequestMapping(value = "getSggcd.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)

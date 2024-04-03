@@ -44,4 +44,14 @@ public class ServletImpl extends EgovAbstractServiceImpl implements ServletServi
 		return dao.getSggCode(sgg);
 	}
 
+	@Override
+	public Map<String, Object> selectGeom(String sd) {
+		return dao.selectGeom(sd);
+	}
+
+	@Override
+	public Map<String, Object> selectSggGeo(String sggnm) {
+		return dao.selectSggGeo(sggnm);
+	}
+
 }
