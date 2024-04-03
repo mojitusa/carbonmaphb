@@ -94,18 +94,23 @@
         let bjdSelected;
         
         let sdnm
+        let sd_cd_value
         
         let sggList
+        let bjdList
         
         let sggs_nm;
         let sggs_cd;
         
         let sdName
+        let sggBjdFlag
         
         $('#sdLayerSelect').change(function() {
         	sdSelected = $(this).val();  // 클릭된 항목의 텍스트 값을 가져옵니다.
         	alert('시도 선택한 값 : ' + sdSelected);
         	console.log('시도 선택한 값 : ' + sdSelected);
+        	
+        	sggBjdFlag = 'sgg';
         	
         	var sggLayerSelect  = $('#sggLayerSelect');
         	var bjdLayerSelect  = $('#bjdLayerSelect');
@@ -120,7 +125,7 @@
         	// 텍스트에서 sd_cd의 값을 추출
         	let sd_cd_index = sdSelected.indexOf("sd_cd="); // sd_cd가 시작하는 인덱스
         	let comma_index = sdSelected.indexOf(",", sd_cd_index); // sd_cd 뒤에 오는 첫 번째 쉼표의 인덱스
-        	let sd_cd_value = sdSelected.slice(sd_cd_index + 6, comma_index); // sd_cd= 다음에 오는 값을 추출
+        	sd_cd_value = sdSelected.slice(sd_cd_index + 6, comma_index); // sd_cd= 다음에 오는 값을 추출
 
         	console.log(sd_cd_value); // 결과: 28
         	
@@ -219,9 +224,11 @@
         	alert('시군구 선택한 값 : ' + sggSelected);
         	console.log('시군구 선택한 값 : ' + sggSelected);
         	
+        	sggBjdFlag = 'bjd';
+        	
             let params = {
                     'VERSION': '1.1.0',
-                    'LAYERS': 'carbonmap:tl_bjd',
+                    'LAYERS': 'carbonmap:bjd_carbon_d2',
                     'BBOX': [1.386872E7, 3906626.5, 1.4428071E7, 4670269.5],
                     'SRS': 'EPSG:3857',
                     'FORMAT': 'image/png'
@@ -293,7 +300,7 @@
                 dataType: 'json',
                 success: function(response) {
                 	alert('시군구 전송 성공');
-                    var bjdList = JSON.parse(response.bjdList);
+                    bjdList = JSON.parse(response.bjdList);
                     
                     let bjdGeo = response.bjdGeo;
                     
@@ -394,48 +401,131 @@
        		
         });
         
-    	// 1. 지도 이벤트 리스너 설정
-    	map.on('singleclick', function(evt) {
-    	    // 2. 클릭한 지점의 좌표를 가져옴
-    	    var coordinate = evt.coordinate;
-    	    
-    	    // 3. 해당 좌표에서의 지리적 정보를 가져오는 요청을 서버에 보냄
-    	    var featureRequest = new ol.format.WFS().writeGetFeature({
-    	        srsName: 'EPSG:3857',
-    	        featureNS: 'http://localhost:8080/geoserver/carbonmap',
-    	        featurePrefix: 'carbonmap',
-    	        featureTypes: ['sgg_carbon_d2'],
-    	        outputFormat: 'application/json',
-    	        geometryName: 'geom',
-    	        filter: new ol.format.filter.Intersects('geom', new ol.geom.Point(coordinate))
-    	    });
-    	    
-    	    // 서버에 요청 보내기
-    	    fetch('http://localhost:8080/geoserver/carbonmap/wfs', {
-    	        method: 'POST',
-    	        body: new XMLSerializer().serializeToString(featureRequest)
-    	    })
-    	    .then(function(response) {
-    	        return response.json();
-    	    })
-    	    .then(function(json) {
-    	        // 4. 가져온 정보에서 단계 구분 값을 추출하여 사용자에게 표시
-    	        if (json.features.length > 0) {
-    	            var properties = json.features[0].properties;
-    	            var sgg_cd = properties['sgg_pu']; // 예시: 구분 값의 키가 'sgg_cd'라 가정
-    	            alert('클릭한 구역의 단계 구분 값: ' + sgg_pu);
-    	        } else {
-    	            alert('클릭한 지점에 대한 정보를 찾을 수 없습니다.');
-    	        }
-    	    });
-    	});        
-		
+     	// 팝업 오버레이 생성
+        var overlay = new ol.Overlay({
+          element: document.getElementById('popup'), // 팝업의 HTML 요소
+          positioning: 'bottom-center', // 팝업을 마커 아래 중앙에 위치시킴
+          offset: [0, -20], // 팝업을 마커 아래로 조정
+          autoPan: true // 팝업이 지도 영역을 벗어날 경우 자동으로 팝업 위치를 조정하여 보여줌
+        });
+        map.addOverlay(overlay);
+
+        // 팝업 닫기 버튼 요소 가져오기
+        var popupCloser = document.getElementById('popup-closer');
+
+        // 클릭 이벤트 리스너 설정
+        map.on('singleclick', function(evt) {
+          // 클릭한 지점의 좌표를 가져옴
+          var coordinate = evt.coordinate;
+          
+          if (sggBjdFlag == 'sgg') {
+              // 해당 좌표에서의 지리적 정보를 가져오는 요청을 서버에 보냄
+              var featureRequest = new ol.format.WFS().writeGetFeature({
+                srsName: 'EPSG:3857',
+                featureNS: 'http://localhost:8080/geoserver/carbonmap',
+                featurePrefix: 'carbonmap',
+                featureTypes: ['sgg_carbon_d2'],
+                outputFormat: 'application/json',
+                geometryName: 'geom',
+                filter: new ol.format.filter.Intersects('geom', new ol.geom.Point(coordinate))
+              });        	  
+          
+          } else if (sggBjdFlag == 'bjd'){
+              // 해당 좌표에서의 지리적 정보를 가져오는 요청을 서버에 보냄
+              var featureRequest = new ol.format.WFS().writeGetFeature({
+                srsName: 'EPSG:3857',
+                featureNS: 'http://localhost:8080/geoserver/carbonmap',
+                featurePrefix: 'carbonmap',
+                featureTypes: ['bjd_carbon_d2'],
+                outputFormat: 'application/json',
+                geometryName: 'geom',
+                filter: new ol.format.filter.Intersects('geom', new ol.geom.Point(coordinate))
+              });        	  
+          }
+
+          // 서버에 요청 보내기
+          fetch('http://localhost:8080/geoserver/carbonmap/wfs', {
+            method: 'POST',
+            body: new XMLSerializer().serializeToString(featureRequest)
+          })
+          .then(function(response) {
+            return response.json();
+          })
+          .then(function(json) {
+            // 가져온 정보에서 단계 구분 값을 추출하여 팝업에 표시
+            if (json.features.length > 0) {
+              var properties = json.features[0].properties;
+              var sgg_pu = properties['sgg_pu']; // 예시: 구분 값의 키가 'sgg_cd'라 가정
+              var sgg_cd = properties['adm_sect_c']; 
+              var sgg_nm = properties['sgg_nm']; 
+              var bjd_pu = properties['bjd_pu'];
+              let bjd_nm = properties['bjd_nm'];
+              let bjd_cd = properties['bjd_cd'];
+              
+              // 팝업 내용을 구성
+              var popupContent;
+              if (sggBjdFlag == 'sgg' && sgg_cd.substring(0,2) == sd_cd_value) {
+                popupContent = 
+                	'<p>' + sgg_nm + '</p>'
+                	+ '<p>전력 사용량 : ' + sgg_pu.toLocaleString() + ' kWh' + '</p>';
+                	
+	              // 팝업 내용 설정
+	              document.getElementById('popup-content').innerHTML = popupContent;
+	              
+	              // 팝업 위치 설정 및 보이기
+	              overlay.setPosition(coordinate);                	
+              } else if (sggBjdFlag == 'bjd' && bjd_cd.substring(0,5) == sggs_cd) {
+                popupContent = 
+                	'<p>' + bjd_nm + '</p>'
+                	+ '<p>전력 사용량 : ' + bjd_pu.toLocaleString() + ' kWh' + '</p>';
+                	
+	              // 팝업 내용 설정
+	              document.getElementById('popup-content').innerHTML = popupContent;
+	              
+	              // 팝업 위치 설정 및 보이기
+	              overlay.setPosition(coordinate);
+              }
+              
+            } else {
+              alert('클릭한 지점에 대한 정보를 찾을 수 없습니다.');
+            }
+          });
+        });
+
+        // 팝업 닫기 버튼에 이벤트 리스너 추가
+        popupCloser.onclick = function() {
+          overlay.setPosition(undefined); // 팝업을 지도에서 제거
+          return false; // 이벤트 전파 방지
+        };
+
+        // navBtn 클릭 시 selectBoxContainer를 숨기거나 보이게 하는 함수
+        function toggleSelectBoxContainer() {
+            var container = document.getElementById("selectBoxContainer");
+            if (container.style.display === "none" || container.style.display === "") {
+                container.style.display = "block";
+            } else {
+                container.style.display = "none";
+            }
+        }
+        
+        // navBtn에 클릭 이벤트 리스너 추가
+        document.getElementById("navBtn").addEventListener("click", function() {
+            toggleSelectBoxContainer();
+        });
+
+        const navBtn = document.getElementById('navBtn');
+        const selectBoxContainer = document.getElementById('selectBoxContainer');
+
+        function toggleSelectBoxContainer() {
+            // selectBoxContainer의 display 속성을 토글하여 보이거나 숨기도록 함
+            selectBoxContainer.style.display = selectBoxContainer.style.display === 'none' ? 'block' : 'none';
+            
+            // 메뉴 텍스트 변경
+            navBtn.textContent = selectBoxContainer.style.display === 'none' ? '메뉴 열기' : '메뉴 닫기';
+        }        
+
 	});
 	
-
-
-
-
 
 </script>
 <style> 
@@ -444,12 +534,42 @@
     }	
 	
     .map {
-      height: 1030px;
-      width: 100%;
+        height: 930px; 
+        width: 100%; 
+    }
+    
+    #navBtn {
+        position: absolute;
+        top: 40px;
+        left: 80px;
+        width: 260px;
+        background-color: #9FA0C3;
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        z-index: 1000;
+        text-align: center; /* 가운데 정렬 */
     }
 
+    #selectBoxContainer {
+        top: 80px;
+        left: 80px;
+        height: 600px;
+        width: 260px; 
+        position: absolute;
+        z-index: 900;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+    	
+    }
+    
     #sdLayerSelect {
-        top: 50px; /* 시도 레이어 토글 버튼의 위치 */
+        top: 30px; /* 시도 레이어 토글 버튼의 위치 */
         left: 50px;
         position: absolute;
         z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */
@@ -463,51 +583,158 @@
     }
 
     #bjdLayerSelect {
-        top:110px; /* 법정동 레이어 토글 버튼의 위치 */
+        top: 130px; /* 법정동 레이어 토글 버튼의 위치 */
         left: 50px; 
         position: absolute;
-        z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */        
+        z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */
         
     }
+    
+  /* Select 스타일 */
+  select {
+    appearance: none; /* 기본 UI를 숨김 */
+    -webkit-appearance: none; /* Safari 및 Chrome 용 */
+    -moz-appearance: none; /* Firefox 용 */
+    background-color: #fff; /* 배경색 */
+    border: 1px solid #ccc; /* 테두리 */
+    padding: 8px; /* 내부 여백 */
+    font-size: 16px; /* 폰트 크기 */
+    font-family: 'Arial', sans-serif; /* 폰트 설정 */
+    color: #333; /* 폰트 색상 */
+    border-radius: 5px; /* 모서리를 둥글게 만듦 */
+    cursor: pointer; /* 마우스 커서를 포인터로 변경 */
+    width: 200px; /* 너비 설정 */
+  }
+
+  /* 선택된 옵션의 배경색 및 글자색 */
+  option:checked {
+    background-color: #007bff; /* 선택된 항목의 배경색 */
+    color: #fff; /* 선택된 항목의 글자색 */
+  }
+
+  /* 드롭다운 화살표 아이콘 */
+  select::after {
+    content: '\25BC'; /* 화살표 아이콘 */
+    position: absolute;
+    top: calc(50% - 0.5em); /* 수직 정렬 */
+    right: 10px; /* 오른쪽 여백 */
+    font-size: 1.2em; /* 아이콘 크기 */
+    pointer-events: none; /* 아이콘 클릭 방지 */
+  }
+
+  /* Select 요소가 활성화될 때 스타일 */
+  select:focus {
+    outline: none; /* 포커스 효과 제거 */
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* 포커스시 테두리 효과 */
+  }
+
+  /* 드롭다운 목록의 스타일 */
+  select option {
+    background-color: #fff; /* 배경색 */
+    color: #333; /* 글자색 */
+    padding: 8px; /* 내부 여백 */
+    font-size: 16px; /* 폰트 크기 */
+    border-radius: 5px; /* 모서리를 둥글게 만듦 */
+  }
+
+  /* 드롭다운 목록의 호버 효과 */
+  select option:hover {
+    background-color: #f0f0f0; /* 호버시 배경색 */
+  }
+
+  /* 드롭다운 목록이 열릴 때의 애니메이션 */
+  select:focus option:checked {
+    background-color: #007bff; /* 선택된 항목의 배경색 */
+    color: #fff; /* 선택된 항목의 글자색 */
+  }    
+    
+    
+
+  /* 폰트 스타일 */
+  body {
+    font-family: 'Arial', sans-serif; /* 여기에 사용할 원하는 폰트 이름을 넣어주세요 */
+  }
+  
+  /* 팝업 스타일 */
+  .popup {
+    position: relative;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    width: 250px; /* 가로폭 조정 */
+    font-size: 16px;
+    color: #333; /* 폰트 색상 */
+    line-height: 1.5; /* 줄간격 조정 */
+    font-weight: bold; /* 폰트 굵기 */
+  }
+
+  /* 팝업 닫기 버튼 스타일 */
+  .popup-closer {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 20px; /* X 아이콘 크기 */
+    color: #888; /* X 아이콘 색상 */
+    text-decoration: none;
+    transition: color 0.3s ease;
+    font-weight: bold; /* 폰트 굵기 */
+    line-height: 1; /* 세로 정렬 */
+  }
+
+  .popup-closer:hover {
+    color: #555; /* 호버 시 색상 변경 */
+  }
   </style>
 </head>
 <body>
 	<div id="map" class="map">
 		<!-- 실제 지도가 표출 될 영역 -->
 	</div>
-	<form id="sdlayerForm">
-		<select id="sdLayerSelect" name="sdSelectLayer" >
-			<option value="default" selected>시도 선택</option> <!-- 기본값을 설정합니다. -->
-            <c:forEach items="${sdList}" var="item">
-                <option value="${item}">${item.sd_nm}</option>
-            </c:forEach>			
-		</select>
-		<ul id="sdlayerList">
-			<c:forEach items="${sdList }" var="item">
-				<li id="sdLayerItem" style="display: none;">${item.sd_nm }</li>
-			</c:forEach>
-		</ul>
-		<input type="hidden" id="sdSelectedLayer" name="sdSelectedLayer">
-	</form>
-
-	<form id="sgglayerForm">
-		<select id="sggLayerSelect" name="sggSelectLayer" >
-			<option value="default" selected>시군구 선택</option> <!-- 기본값을 설정합니다. -->
-		</select>
-		<ul id="sgglayerList">
-		</ul>
-		<input type="hidden" id="sggSelectedLayer" name="sggSelectedLayer">
-	</form>	
 	
-	<form id="bjdlayerForm">
-		<select id="bjdLayerSelect" name="bjdSelectLayer" >
-			<option value="default" selected>법정동 선택</option> <!-- 기본값을 설정합니다. -->
-		</select>
-		<ul id="bjdlayerList">
-		</ul>
-		<input type="hidden" id="bjdSSelectedLayer" name="bjdSelectedLayer">
-	</form>	
+	<!-- 팝업을 나타내는 HTML 요소 -->
+	<div id="popup" class="popup">
+	  <a href="#" id="popup-closer" class="popup-closer">&times;</a>
+	  <div id="popup-content"></div>
+	</div>
 	
+	<div id="navBtn">
+		메뉴 닫기
+	</div>
+	<div id="selectBoxContainer">
+		<form id="sdlayerForm">
+			<select id="sdLayerSelect" name="sdSelectLayer" >
+				<option value="default" selected>시도 선택</option> <!-- 기본값을 설정합니다. -->
+	            <c:forEach items="${sdList}" var="item">
+	                <option value="${item}">${item.sd_nm}</option>
+	            </c:forEach>			
+			</select>
+			<ul id="sdlayerList">
+				<c:forEach items="${sdList }" var="item">
+					<li id="sdLayerItem" style="display: none;">${item.sd_nm }</li>
+				</c:forEach>
+			</ul>
+			<input type="hidden" id="sdSelectedLayer" name="sdSelectedLayer">
+		</form>
+	
+		<form id="sgglayerForm">
+			<select id="sggLayerSelect" name="sggSelectLayer" >
+				<option value="default" selected>시군구 선택</option> <!-- 기본값을 설정합니다. -->
+			</select>
+			<ul id="sgglayerList">
+			</ul>
+			<input type="hidden" id="sggSelectedLayer" name="sggSelectedLayer">
+		</form>	
+		
+		<form id="bjdlayerForm">
+			<select id="bjdLayerSelect" name="bjdSelectLayer" >
+				<option value="default" selected>법정동 선택</option> <!-- 기본값을 설정합니다. -->
+			</select>
+			<ul id="bjdlayerList">
+			</ul>
+			<input type="hidden" id="bjdSSelectedLayer" name="bjdSelectedLayer">
+		</form>	
+	</div>
 	
 	
 </body>
