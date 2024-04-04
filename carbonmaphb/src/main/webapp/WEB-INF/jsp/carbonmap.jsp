@@ -111,6 +111,12 @@
         	alert('시도 선택한 값 : ' + sdSelected);
         	console.log('시도 선택한 값 : ' + sdSelected);
         	
+        	if (sdSelected == 'default') {
+	    	 	// legend 클래스를 안 보이도록 변경
+	    	 	legendContainer = document.querySelector('.legend');
+	    	    legendContainer.style.display = 'none';
+        	}
+        	
         	sggBjdFlag = 'sgg';
         	
         	var sggLayerSelect  = $('#sggLayerSelect');
@@ -164,6 +170,7 @@
         	sdLayer.setVisible(true);
 
         	//범례 업데이트
+        	if (sdSelected != 'default')
             fetchLegendInfo('sgg_d2_nb');        	
         	
 			// AJAX를 통해 선택한 값을 컨트롤러로 전송
@@ -199,7 +206,8 @@
                     sggLayerSelect.empty();
                     sggLayerList.empty();
                     console.log("전체 선택 : " + sdSelected.sd_nm);
-                    sggLayerSelect.append($('<option></option>').text('시군구 선택').val('')); // 기본값 추가
+                    
+                    //sggLayerSelect.append($('<option></option>').text('시군구 선택').val('')); // 기본값 추가
                     sggLayerSelect.append($('<option></option>').attr('value', '시도 전체 선택').text('전체 선택'));
                     
                     var optionsHTML = ''; // 옵션들을 담을 빈 문자열 생성
@@ -253,7 +261,7 @@
 	        	//범례 업데이트
 	        	fetchLegendInfo('bjd_d2_eq');
 	        	
-        	} else {
+        	} else if (lStyle == 'bjd_d2_nb') {
 	        	//범례 업데이트
 	        	fetchLegendInfo('bjd_d2_nb');
 	        	
@@ -291,6 +299,7 @@
         	}
 	        	
             if(sdLayer || sggLayer || bjdLayer) {
+            	alert('레이어가 있나요?');
                 map.removeLayer(sdLayer);
                 map.removeLayer(sggLayer);
                 map.removeLayer(bjdLayer);
@@ -307,15 +316,32 @@
         	map.addLayer(sdLayer);
         	
     		//시군구
-    		sggLayer = new ol.layer.Tile({
-    			source : new ol.source.TileWMS({
-    				url : 'http://localhost:8080/geoserver/carbonmap/wms?service=WMS', // 1. 레이어 URL
-    				params: params,
-    				serverType : 'geoserver',
-    			})
-    		});        	
-        	map.addLayer(sggLayer);
-        	sggLayer.setVisible(true);
+    		if (sggSelected == "") {
+        		// sdLayer의 소스에 접근하여 파라미터 수정
+        		let source = sdLayer.getSource();
+        		let params = source.getParams();
+        		let style; 
+        		if (legendSelected == 'eq') {
+        			style = 'sgg_d2_eq'
+        		} else if (legendSelected == 'nb') {
+        			style = 'sgg_d2_nb'
+        		}
+        		console.log('sggstyle : ' + style);
+        		params.STYLES = style; // 스타일 변경
+        		source.updateParams(params); // 변경된 파라미터로 소스 업데이트
+        		
+    		} else {
+    			alert('sggSelected ? ' + sggSelected);
+	    		sggLayer = new ol.layer.Tile({
+	    			source : new ol.source.TileWMS({
+	    				url : 'http://localhost:8080/geoserver/carbonmap/wms?service=WMS', // 1. 레이어 URL
+	    				params: params,
+	    				serverType : 'geoserver',
+	    			})
+	    		});        	
+	        	map.addLayer(sggLayer);
+	        	sggLayer.setVisible(true);
+    		}
         	
 			// AJAX를 통해 선택한 값을 컨트롤러로 전송
             $.ajax({
@@ -333,7 +359,7 @@
 	                    map.getView().fit([bjdGeo.xmin, bjdGeo.ymin, bjdGeo.xmax, bjdGeo.ymax], {duation : 900}); 
                     }
                     
-                    // sggLayerSelect 업데이트
+                    // bjdLayerSelect 업데이트
                     var bjdLayerSelect  = $('#bjdLayerSelect');
                     
                     var bjdLayerList = $('#bjdlayerList'); 
@@ -549,8 +575,9 @@
             navBtn.textContent = selectBoxContainer.style.display === 'none' ? '⏬  메뉴 열기' : '⏫ 메뉴 닫기';
         }    
         
+        let legendSelected = 'nb';
         $('#legendSelect').change(function() {
-        	let legendSelected = $(this).val();
+        	legendSelected = $(this).val();
         	if (sggBjdFlag == 'sgg') {
         		// sdLayer의 소스에 접근하여 파라미터 수정
         		let source = sdLayer.getSource();
