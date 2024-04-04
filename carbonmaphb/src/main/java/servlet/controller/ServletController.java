@@ -127,5 +127,12 @@ public class ServletController {
 		
 		return sggCode;
 	}
+	
+	@RequestMapping(value = "legendSelect.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@ResponseBody
+	public String legendSelect(@RequestParam("legendSelected") String lgd) {
+		System.out.println("범례 : " + lgd);
+		return lgd;
+	}
 
 }

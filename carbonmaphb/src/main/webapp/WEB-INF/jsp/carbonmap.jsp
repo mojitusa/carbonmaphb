@@ -104,6 +104,7 @@
         
         let sdName
         let sggBjdFlag
+        let lStyle
         
         $('#sdLayerSelect').change(function() {
         	sdSelected = $(this).val();  // 클릭된 항목의 텍스트 값을 가져옵니다.
@@ -161,7 +162,9 @@
     		}); 
         	map.addLayer(sdLayer);
         	sdLayer.setVisible(true);
-            
+
+        	//범례 업데이트
+            fetchLegendInfo('sgg_d2_nb');        	
         	
 			// AJAX를 통해 선택한 값을 컨트롤러로 전송
             $.ajax({
@@ -179,6 +182,14 @@
                     //zoom
                     map.getView().fit([geoSgg.xmin, geoSgg.ymin, geoSgg.xmax, geoSgg.ymax], {duation : 900});  
 
+                    //범례 추가
+                    let legendSelect = $('#legendSelect');
+                    legendSelect.empty();
+                    legendSelect.append($('<option></option>').attr('value', 'default').text('범례 선택'));
+                    legendSelect.append($('<option></option>').attr('value', 'nb').text('내추럴 브레이크'));
+                    legendSelect.append($('<option></option>').attr('value', 'eq').text('등간격'));
+                    
+                    
                     // sggLayerSelect 업데이트
                     var sggLayerSelect  = $('#sggLayerSelect');
                     
@@ -225,6 +236,7 @@
         	console.log('시군구 선택한 값 : ' + sggSelected);
         	
         	sggBjdFlag = 'bjd';
+        	alert('sggBjdFlag 변경 : ' + sggBjdFlag);
         	
             let params = {
                     'VERSION': '1.1.0',
@@ -233,6 +245,20 @@
                     'SRS': 'EPSG:3857',
                     'FORMAT': 'image/png'
                 }; 
+            
+        	if (lStyle == 'bjd_d2_eq') {
+        		alert(lStyle);
+				params['STYLES'] = lStyle;
+				
+	        	//범례 업데이트
+	        	fetchLegendInfo('bjd_d2_eq');
+	        	
+        	} else {
+	        	//범례 업데이트
+	        	fetchLegendInfo('bjd_d2_nb');
+	        	
+        	}
+        	
           	let sdParams = {
 					'VERSION' : '1.1.0', // 2. 버전
 					'LAYERS' : 'carbonmap:sgg_carbon_d2', // 3. 작업공간:레이어 명
@@ -240,6 +266,7 @@
 					'CQL_FILTER': sdName,
 					'SRS' : 'EPSG:3857', // SRID
 					'FORMAT' : 'image/png', // 포맷
+					
           	}
         	
         	if (sggSelected == '시도 전체 선택') {
@@ -254,6 +281,7 @@
                     }
                 });        		
         		
+            	//시군구 코드가 4개여도 나오도록
         		params['CQL_FILTER'] = "sgg_cd LIKE '" + sggs_cd + "%'";
         		alert('params : ' + params['CQL_FILTER']);
         		
@@ -288,9 +316,6 @@
     		});        	
         	map.addLayer(sggLayer);
         	sggLayer.setVisible(true);
-        	
-        	
-        	
         	
 			// AJAX를 통해 선택한 값을 컨트롤러로 전송
             $.ajax({
@@ -474,7 +499,7 @@
 	              
 	              // 팝업 위치 설정 및 보이기
 	              overlay.setPosition(coordinate);                	
-              } else if (sggBjdFlag == 'bjd' && bjd_cd.substring(0,5) == sggs_cd) {
+              } else if (sggBjdFlag == 'bjd' && bjd_cd.substring(0,4) == sggs_cd.substring(0,4)) {
                 popupContent = 
                 	'<p>' + bjd_nm + '</p>'
                 	+ '<p>전력 사용량 : ' + bjd_pu.toLocaleString() + ' kWh' + '</p>';
@@ -521,10 +546,161 @@
             selectBoxContainer.style.display = selectBoxContainer.style.display === 'none' ? 'block' : 'none';
             
             // 메뉴 텍스트 변경
-            navBtn.textContent = selectBoxContainer.style.display === 'none' ? '메뉴 열기' : '메뉴 닫기';
-        }        
-
+            navBtn.textContent = selectBoxContainer.style.display === 'none' ? '⏬  메뉴 열기' : '⏫ 메뉴 닫기';
+        }    
+        
+        $('#legendSelect').change(function() {
+        	let legendSelected = $(this).val();
+        	if (sggBjdFlag == 'sgg') {
+        		// sdLayer의 소스에 접근하여 파라미터 수정
+        		let source = sdLayer.getSource();
+        		let params = source.getParams();
+        		let style; 
+        		if (legendSelected == 'eq') {
+        			style = 'sgg_d2_eq'
+        		} else if (legendSelected == 'nb') {
+        			style = 'sgg_d2_nb'
+        		}
+        		console.log('sggstyle : ' + style);
+        		params.STYLES = style; // 스타일 변경
+        		source.updateParams(params); // 변경된 파라미터로 소스 업데이트
+        		
+        		//범례 재구성
+        		fetchLegendInfo(style);
+        		
+        	} else if (sggBjdFlag == 'bjd') {
+        		// sggLayer의 소스에 접근하여 파라미터 수정
+        		let source = sggLayer.getSource();
+        		let params = source.getParams();
+        		let style; 
+        		if (legendSelected == 'eq') {
+        			style = 'bjd_d2_eq'
+        			lStyle = style;
+        		} else if (legendSelected == 'nb') {
+        			style = 'bjd_d2_nb'
+        			lStyle = style;
+        		}
+        		console.log('bjdstyle : ' + style);
+        		params.STYLES = style; // 스타일 변경
+        		source.updateParams(params); // 변경된 파라미터로 소스 업데이트
+        		
+        		//범례 재구성
+        		fetchLegendInfo(style);
+        		
+        	}      	
+        	
+        });
 	});
+	
+	function fetchLegendInfo(styleName) {
+	    // GeoServer의 REST API 엔드포인트 설정
+	    const baseUrl = 'http://localhost:8080/geoserver';
+	    const styleEndpoint = `${"${baseUrl}"}/rest/styles/${"${styleName}"}.sld`;
+
+	    // Ajax를 사용하여 범례 정보 가져오기
+	    $.ajax({
+	        url: styleEndpoint,
+	        dataType: 'xml',
+	        success: function(response) {
+	        	
+	            // Ajax 요청이 성공했을 때 처리할 코드
+	            // 반환된 JSON 데이터에서 범례 정보 추출 및 처리
+	            let breakValues = extractRuleNames(response);
+	            console.log('Break Values:', breakValues);
+	            updateLegend(breakValues);
+
+	            // 여기서 범례 이미지 URL을 사용하여 이미지를 화면에 표시하거나 추가적인 처리를 할 수 있습니다.
+	        },
+	        error: function(xhr, status, error) {
+	            // Ajax 요청이 실패했을 때 처리할 코드
+	            console.error('Error:', error);
+	        }
+	    });
+	}
+	
+	function extractRuleNames(sldXml) {
+	    const ruleNames = [];
+
+	    // SLD XML을 jQuery 객체로 변환
+	    const $xml = $(sldXml);
+
+	    // 각 분류(Classification) 요소를 찾아 반복
+	    $xml.find('sld\\:FeatureTypeStyle > sld\\:Rule').each(function() {
+	        const $rule = $(this);
+
+	        // Rule 내의 se:Name 요소의 텍스트 값을 추출하여 배열에 추가
+	        const ruleName = $rule.find('sld\\:Name').text().trim();
+	        console.log('rule : ' + ruleName);
+	        ruleNames.push(ruleName);
+	    });
+
+	    return ruleNames;
+	}
+
+	function updateLegend(breakValues) {
+	    const legendContainer = document.querySelector('.legend');
+
+	    // 먼저 기존의 legend-item 요소를 모두 제거합니다.
+	    const legendItems = document.querySelectorAll('.legend-item');
+	    legendItems.forEach(item => item.remove());
+
+	    // breakValues 배열을 순회하면서 legend-item을 생성하고 legendContainer에 추가합니다.
+	    breakValues.forEach((value, index) => {
+	        const legendItem = document.createElement('div');
+	        legendItem.classList.add('legend-item');
+
+	        // 값을 "-" 기준으로 분리하여 숫자 부분만 추출합니다.
+	        const [start, end] = value.split('-').map(Number);
+	        
+	        // 숫자를 locale string으로 변환하여 읽기 쉽게 만듭니다.
+	        const formattedStart = start.toLocaleString();
+	        const formattedEnd = end.toLocaleString();	        
+	        
+	        // 연결된 문자열을 생성합니다.
+	        const stringValue = `${"${formattedStart}"} ~ ${"${formattedEnd}"}`;	        
+	        
+	        const colorSpan = document.createElement('span');
+	        colorSpan.style.backgroundColor = getColor(); // getColor 함수는 각 값에 해당하는 색상을 반환하는 것으로 가정합니다.
+			
+	        const textNode = document.createTextNode(stringValue);
+	        legendItem.appendChild(colorSpan);
+	        legendItem.appendChild(textNode);
+	        
+	        legendContainer.appendChild(legendItem);
+	    });
+	    
+	 	// legend 클래스를 보이도록 변경
+	    legendContainer.style.display = 'block';
+	}
+
+	let counter = 0; // getColor 함수 외부에서 선언하여 값이 유지되도록 수정
+	function getColor() {
+	    let color = '#ffffff'; // 기본값으로 흰색을 지정
+	
+	    // counter 변수를 사용하여 다른 색상을 반환
+	    switch (counter) {
+	        case 0:
+	            color = '#ffffff'; // 흰색
+	            break;
+	        case 1:
+	            color = '#ffbfbf'; // 연한 분홍색
+	            break;
+	        case 2:
+	            color = '#ff8080'; // 분홍색
+	            break;
+	        case 3:
+	            color = '#ff4040'; // 적색
+	            break;
+	        case 4:
+	            color = '#ff0000'; // 빨간색
+	            break;
+	    }
+	
+	    // counter 값을 증가시킴
+	    counter = (counter + 1) % 5; // 0부터 4까지 반복되도록 설정
+	
+	    return color;
+	}  
 	
 
 </script>
@@ -584,6 +760,14 @@
 
     #bjdLayerSelect {
         top: 130px; /* 법정동 레이어 토글 버튼의 위치 */
+        left: 50px; 
+        position: absolute;
+        z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */
+        
+    }
+    
+    #legendSelect {
+        top: 180px; /* 법정동 레이어 토글 버튼의 위치 */
         left: 50px; 
         position: absolute;
         z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */
@@ -685,6 +869,35 @@
   .popup-closer:hover {
     color: #555; /* 호버 시 색상 변경 */
   }
+  
+	/* 범례 스타일 */
+	.legend {
+	  background-color: rgba(255, 255, 255, 0.8);
+	  border: 1px solid #ccc;
+	  border-radius: 5px;
+	  padding: 10px;
+	  position: absolute;
+	  bottom: 20px;
+	  right: 20px;
+	  z-index: 1000;
+	  display: none;
+	}
+	
+	.legend-title {
+	  font-weight: bold;
+	  margin-bottom: 5px;
+	}
+	
+	.legend-item {
+	  margin-bottom: 5px;
+	}
+	
+	.legend-item span {
+	  display: inline-block;
+	  width: 20px;
+	  height: 10px;
+	  margin-right: 5px;
+	}  
   </style>
 </head>
 <body>
@@ -699,7 +912,7 @@
 	</div>
 	
 	<div id="navBtn">
-		메뉴 닫기
+		⏫ 메뉴 닫기
 	</div>
 	<div id="selectBoxContainer">
 		<form id="sdlayerForm">
@@ -734,8 +947,26 @@
 			</ul>
 			<input type="hidden" id="bjdSSelectedLayer" name="bjdSelectedLayer">
 		</form>	
+		<form id="legendSelectForm">
+			<select id="legendSelect" name="legendSelect" >
+				<option value="default" selected>범례 선택</option> <!-- 기본값을 설정합니다. -->
+			</select>
+		</form>			
 	</div>
-	
+	<!-- 범례 요소 -->
+	<div class="legend">
+	  <div class="legend-title">전력 사용량 범례 (단위 kWh)</div>
+	  
+	  <div class="legend-item">
+	    <span style="background-color: #ff0000;"></span> 0 - 100
+	  </div>
+	  <div class="legend-item">
+	    <span style="background-color: #ffcc00;"></span> 101 - 200
+	  </div>
+	  <div class="legend-item">
+	    <span style="background-color: #00ff00;"></span> 201 - 300
+	  </div>
+	</div>	
 	
 </body>
 </html>
