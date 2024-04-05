@@ -45,4 +45,8 @@ public class ServletDAO extends EgovComAbstractDAO {
 		return selectOne("servlet.selectSggGeo", sgg);
 	}
 
+	public List<Map<String, Object>> getSdPu() {
+		return selectList("servlet.getSdPu");
+	}
+
 }

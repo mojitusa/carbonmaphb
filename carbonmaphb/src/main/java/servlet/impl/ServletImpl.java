@@ -54,4 +54,9 @@ public class ServletImpl extends EgovAbstractServiceImpl implements ServletServi
 		return dao.selectSggGeo(sggnm);
 	}
 
+	@Override
+	public List<Map<String, Object>> getSdPu() {
+		return dao.getSdPu();
+	}
+
 }

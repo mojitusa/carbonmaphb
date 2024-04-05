@@ -134,5 +134,11 @@ public class ServletController {
 		System.out.println("범례 : " + lgd);
 		return lgd;
 	}
-
+	
+	@RequestMapping(value = "sdPu.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@ResponseBody
+	public List<Map<String, Object>> sdPu() {
+		List<Map<String, Object>> sdPu = servletService.getSdPu();
+		return sdPu;
+	}
 }

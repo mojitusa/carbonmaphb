@@ -23,7 +23,6 @@
 		FROM tl_sgg
 		WHERE sd_nm=#{sd}
 		ORDER BY col_adm_se
-		
 	</select>
 	
 	<select id="getBjd" resultType="Map" >
@@ -53,5 +52,10 @@
       ,(select  ST_XMin(geom) as xmin FROM tl_sgg WHERE  sgg_nm = #{sgg}::varchar order by xmin  limit 1)
       ,(select ST_YMin(geom) as ymin FROM tl_sgg WHERE  sgg_nm = #{sgg}::varchar order by ymin limit 1)
           from tl_sd limit 1
+   </select>
+   
+   <select id="getSdPu" resultType="Map">
+   		SELECT tl.sd_nm, c.sd_pu
+   		FROM sd_carbon_d2 c JOIN tl_sd tl ON c.sd=tl.sd_cd 
    </select>
 </mapper>

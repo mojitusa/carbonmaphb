@@ -18,4 +18,6 @@ public interface ServletService {
 
 	Map<String, Object> selectSggGeo(String sggnm);
 
+	List<Map<String, Object>> getSdPu();
+
 }

@@ -13,6 +13,9 @@
 <script type="text/javascript" src="<c:url value='/js/mapTest.js' />"></script> <!-- 지도 맵객체 생성을 위한 js-->
 <!-- 지도 크기 설정을 위한 css -->
 
+<!-- Google Charts API 스크립트 추가 -->
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
 <script type="text/javascript">
 	$( document ).ready(function() {
 		
@@ -245,6 +248,8 @@
         	
         	sggBjdFlag = 'bjd';
         	alert('sggBjdFlag 변경 : ' + sggBjdFlag);
+        	
+        	
         	
             let params = {
                     'VERSION': '1.1.0',
@@ -500,7 +505,9 @@
             body: new XMLSerializer().serializeToString(featureRequest)
           })
           .then(function(response) {
-            return response.json();
+        	  let res = response.json();
+        	  console.log(res);
+            return res;
           })
           .then(function(json) {
             // 가져온 정보에서 단계 구분 값을 추출하여 팝업에 표시
@@ -548,16 +555,6 @@
           overlay.setPosition(undefined); // 팝업을 지도에서 제거
           return false; // 이벤트 전파 방지
         };
-
-        // navBtn 클릭 시 selectBoxContainer를 숨기거나 보이게 하는 함수
-        function toggleSelectBoxContainer() {
-            var container = document.getElementById("selectBoxContainer");
-            if (container.style.display === "none" || container.style.display === "") {
-                container.style.display = "block";
-            } else {
-                container.style.display = "none";
-            }
-        }
         
         // navBtn에 클릭 이벤트 리스너 추가
         document.getElementById("navBtn").addEventListener("click", function() {
@@ -567,9 +564,13 @@
         const navBtn = document.getElementById('navBtn');
         const selectBoxContainer = document.getElementById('selectBoxContainer');
 
+   		// navBtn 클릭 시 selectBoxContainer를 숨기거나 보이게 하는 함수
         function toggleSelectBoxContainer() {
             // selectBoxContainer의 display 속성을 토글하여 보이거나 숨기도록 함
             selectBoxContainer.style.display = selectBoxContainer.style.display === 'none' ? 'block' : 'none';
+            menuSel.style.display = menuSel.style.display === 'none' ? 'flex' : 'none' ;
+            navTop.style.borderBottomLeftRadius = navTop.style.borderBottomLeftRadius === '10px' ? '0' : '10px';
+            navTop.style.borderBottomRightRadius = navTop.style.borderBottomRightRadius === '10px' ? '0' : '10px';
             
             // 메뉴 텍스트 변경
             navBtn.textContent = selectBoxContainer.style.display === 'none' ? '⏬  메뉴 열기' : '⏫ 메뉴 닫기';
@@ -729,6 +730,73 @@
 	    return color;
 	}  
 	
+    // Google Charts API 로드
+    google.charts.load('current', {'packages':['corechart']});
+    
+    // 모달 창 열기
+    function openModal() {
+      // 모달 창 요소 가져오기
+      var modal = document.getElementById('statModal');
+      
+      // 모달 창 열기
+      modal.style.display = "block";
+
+      // 그래프 그리기
+      drawChart();
+    }
+
+    // 모달 창 닫기
+    function closeModal() {
+      // 모달 창 요소 가져오기
+      var modal = document.getElementById('statModal');
+      
+      // 모달 창 닫기
+      modal.style.display = "none";
+
+      // 차트 파기
+      var chartDiv = document.getElementById('chart_div');
+      chartDiv.innerHTML = ''; // 차트 요소를 비움
+    }
+
+    // 그래프 그리기
+    function drawChart() {
+    	
+      	//DB에서 데이터 가져오기
+	    // Ajax를 사용하여 차트에 그릴 정보 가져오기
+   		fetch('/sdPu.do', { method: 'POST' }) // POST 요청으로 데이터를 요청합니다.
+        .then(response => response.json()) // JSON 형식으로 변환합니다.
+        .then(data => {
+            // 받은 데이터를 처리합니다.
+            console.log('Received data:', data);
+            
+            var dataTable = new google.visualization.DataTable();
+            dataTable.addColumn('string', '지역');
+            dataTable.addColumn('number', '전력 사용량');
+            
+            // 받은 데이터를 DataTable 형식으로 변환합니다.
+            data.forEach(item => {
+                dataTable.addRow([item.sd_nm, item.sd_pu]);
+            });
+            
+            // 변환된 DataTable을 출력합니다.
+            console.log(dataTable);
+            
+            // 옵션 설정
+            var options = {
+              title: 'Company Performance',
+              //vAxis: {title: 'Year',  titleTextStyle: {color: 'red'}}
+            };
+
+            // 그래프 생성
+            var chart = new google.visualization.BarChart(document.getElementById('chart_div'));
+            chart.draw(dataTable, options);            
+            
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+        });	    
+    
+    }
 
 </script>
 <style> 
@@ -740,67 +808,108 @@
         height: 930px; 
         width: 100%; 
     }
-    
-    #navBtn {
-        position: absolute;
-        top: 40px;
-        left: 80px;
-        width: 260px;
+
+	#nav {
+		position: absolute;
+		top: 40px;
+		left: 80px;
+		width: 302px;
+	}
+	    
+    #navTop {
         background-color: #9FA0C3;
         color: #fff;
         padding: 10px 20px;
         border: none;
-        border-radius: 5px;
-        cursor: pointer;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
         z-index: 1000;
         text-align: center; /* 가운데 정렬 */
     }
-
-    #selectBoxContainer {
-        top: 80px;
-        left: 80px;
-        height: 600px;
-        width: 260px; 
-        position: absolute;
-        z-index: 900;
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        background-color: rgba(255, 255, 255, 0.9);
-        border-radius: 10px;
-        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        padding: 20px;
+    
+    #navBtn {
+    	margin: 10px 0;
+    	font-size: 17px;
+    	cursor: pointer;
+    }
+    
+    #menuSel {
+        background-color: #9FA0C3;
+        color: #fff;
+        width: 260px;
+        padding: 10px 0;
+        border: none;
+        z-index: 1000;
+        text-align: center; /* 가운데 정렬 */
+        display: flex;
     	
     }
     
+    .navMenu {
+        text-align: center; /* 텍스트를 가운데 정렬합니다. */
+        cursor: pointer; /* 마우스를 가져다 댔을 때 커서 모양을 변경합니다. */
+        flex: 1; /* 각 요소가 동일한 너비를 가지도록 합니다. */    
+		margin: 0 5px; /* 여백 */   
+		padding: 10px 0;
+		box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1); /* 그림자 */  
+		border-radius: 5px; /* 모서리를 둥글게 만듦 */
+		cursor: pointer;   
+    }
+
+	.navMenu:hover {
+	    background-color: #A7A8C3; /* 호버시 배경색 */
+	}
+    
+
+    #selectBoxContainer {
+        top: 80px;
+        height: 600px;
+        width: 260px; 
+        z-index: 900;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        background-color: rgba(255, 255, 255, 0.9);
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        text-align: center;
+    }
+    
     #sdLayerSelect {
-        top: 30px; /* 시도 레이어 토글 버튼의 위치 */
-        left: 50px;
-        position: absolute;
+        top: 150px; /* 시도 레이어 토글 버튼의 위치 */
+        left: 120px;
+        /* position: absolute; */
         z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */
     }
 
     #sggLayerSelect {
-        top: 80px; /* 시군구 레이어 토글 버튼의 위치 */
+        top: 200px; /* 시군구 레이어 토글 버튼의 위치 */
         left: 50px;
-        position: absolute;
+        /* position: absolute; */
         z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */
     }
 
     #bjdLayerSelect {
-        top: 130px; /* 법정동 레이어 토글 버튼의 위치 */
+        top: 250px; /* 법정동 레이어 토글 버튼의 위치 */
         left: 50px; 
-        position: absolute;
+        /* position: absolute; */
         z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */
         
     }
     
     #legendSelect {
-        top: 180px; /* 법정동 레이어 토글 버튼의 위치 */
+        top: 300px;
         left: 50px; 
-        position: absolute;
+        /* position: absolute; */
         z-index: 1000; /* 버튼이 최상위에 나타나도록 z-index 설정 */
         
     }
-    
+   
+   
+  /* ---------------------------------------------------*/  
+  /* ---------------------------------------------------*/  
+  /* ---------------------------------------------------*/
+  
   /* Select 스타일 */
   select {
     appearance: none; /* 기본 UI를 숨김 */
@@ -860,7 +969,10 @@
   }    
     
     
-
+  /*  -------------------------------------------------- */
+  /*  -------------------------------------------------- */
+  /*  -------------------------------------------------- */
+  /*  ----------------------팝업 스타일--------------------- */
   /* 폰트 스타일 */
   body {
     font-family: 'Arial', sans-serif; /* 여기에 사용할 원하는 폰트 이름을 넣어주세요 */
@@ -897,6 +1009,13 @@
     color: #555; /* 호버 시 색상 변경 */
   }
   
+  
+    /* ------------------------------------------------------- */
+    /* ------------------------------------------------------- */
+    /* ------------------------------------------------------- */
+    /* ------------------------------------------------------- */
+    /* ------------------- 범례 스타일 -------------------- */
+  
 	/* 범례 스타일 */
 	.legend {
 	  background-color: rgba(255, 255, 255, 0.8);
@@ -925,6 +1044,50 @@
 	  height: 10px;
 	  margin-right: 5px;
 	}  
+	
+	/* --------------------------------------------------- */
+	/* --------------------------------------------------- */
+	/* --------------------------------------------------- */
+	/* --------------------------------------------------- */
+	/* -----------------모달 스타일----------------------- */
+	
+    /* 모달 스타일 */
+    .modal {
+      display: none; /* 기본적으로 모달은 숨겨져 있음 */
+      position: fixed; /* 고정 위치 */
+      z-index: 1; /* 최상위 */
+      left: 0;
+      top: 0;
+      width: 100%; /* 전체 너비 */
+      height: 100%; /* 전체 높이 */
+      overflow: auto; /* 스크롤 가능하도록 */
+      background-color: rgba(0,0,0,0.4); /* 반투명 배경 */
+    }
+
+    /* 모달 내용 스타일 */
+    .modal-content {
+      background-color: #fefefe; /* 흰색 배경 */
+      margin: 3% auto; /* 중앙 정렬 */
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%; /* 너비 */
+    }
+
+    /* 닫기 버튼 스타일 */
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    /* 닫기 버튼 호버 효과 */
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }	
   </style>
 </head>
 <body>
@@ -937,63 +1100,88 @@
 	  <a href="#" id="popup-closer" class="popup-closer">&times;</a>
 	  <div id="popup-content"></div>
 	</div>
-	
-	<div id="navBtn">
-		⏫ 메뉴 닫기
+	<div id="nav">
+		<div id="navTop">
+			<div id=navBtn>
+				⏫ 메뉴 닫기
+			</div>
+			<div id=menuSel>
+				<div class=navMenu>지도</div>
+				<div class=navMenu>업로드</div>
+				<div class=navMenu onclick="openModal()">통계</div>
+			</div>
+		</div>
+		<div id="navMain">
+			<div id="selectBoxContainer">
+				<form id="sdlayerForm">
+					<select id="sdLayerSelect" name="sdSelectLayer" >
+						<option value="default" selected>시도 선택</option> <!-- 기본값을 설정합니다. -->
+			            <c:forEach items="${sdList}" var="item">
+			                <option value="${item}">${item.sd_nm}</option>
+			            </c:forEach>			
+					</select>
+					<ul id="sdlayerList">
+						<c:forEach items="${sdList }" var="item">
+							<li id="sdLayerItem" style="display: none;">${item.sd_nm }</li>
+						</c:forEach>
+					</ul>
+					<input type="hidden" id="sdSelectedLayer" name="sdSelectedLayer">
+				</form>
+			
+				<form id="sgglayerForm">
+					<select id="sggLayerSelect" name="sggSelectLayer" >
+						<option value="default" selected>시군구 선택</option> <!-- 기본값을 설정합니다. -->
+					</select>
+					<ul id="sgglayerList">
+					</ul>
+					<input type="hidden" id="sggSelectedLayer" name="sggSelectedLayer">
+				</form>	
+				
+				<form id="bjdlayerForm">
+					<select id="bjdLayerSelect" name="bjdSelectLayer" >
+						<option value="default" selected>법정동 선택</option> <!-- 기본값을 설정합니다. -->
+					</select>
+					<ul id="bjdlayerList">
+					</ul>
+					<input type="hidden" id="bjdSSelectedLayer" name="bjdSelectedLayer">
+				</form>	
+				<form id="legendSelectForm">
+					<select id="legendSelect" name="legendSelect" >
+						<option value="default" selected>범례 선택</option> <!-- 기본값을 설정합니다. -->
+					</select>
+				</form>			
+			</div>
+			<div id="upLoad">
+				
+			</div>
+			<div id="stat">
+				<!-- 모달 창 -->
+				<div id="statModal" class="modal">
+					<!-- 모달 내용 -->
+					<div class="modal-content">
+						<!-- 닫기 버튼 -->
+						<span class="close" onclick="closeModal()" style="position: absolute; top: 10px; right: 10px;">&times;</span>
+						<!-- 그래프가 그려질 div -->
+						<div id="chart_div" style="width: 100%; height: 800px;"></div>
+					</div>
+				</div>				
+			</div>
+		</div>
 	</div>
-	<div id="selectBoxContainer">
-		<form id="sdlayerForm">
-			<select id="sdLayerSelect" name="sdSelectLayer" >
-				<option value="default" selected>시도 선택</option> <!-- 기본값을 설정합니다. -->
-	            <c:forEach items="${sdList}" var="item">
-	                <option value="${item}">${item.sd_nm}</option>
-	            </c:forEach>			
-			</select>
-			<ul id="sdlayerList">
-				<c:forEach items="${sdList }" var="item">
-					<li id="sdLayerItem" style="display: none;">${item.sd_nm }</li>
-				</c:forEach>
-			</ul>
-			<input type="hidden" id="sdSelectedLayer" name="sdSelectedLayer">
-		</form>
-	
-		<form id="sgglayerForm">
-			<select id="sggLayerSelect" name="sggSelectLayer" >
-				<option value="default" selected>시군구 선택</option> <!-- 기본값을 설정합니다. -->
-			</select>
-			<ul id="sgglayerList">
-			</ul>
-			<input type="hidden" id="sggSelectedLayer" name="sggSelectedLayer">
-		</form>	
-		
-		<form id="bjdlayerForm">
-			<select id="bjdLayerSelect" name="bjdSelectLayer" >
-				<option value="default" selected>법정동 선택</option> <!-- 기본값을 설정합니다. -->
-			</select>
-			<ul id="bjdlayerList">
-			</ul>
-			<input type="hidden" id="bjdSSelectedLayer" name="bjdSelectedLayer">
-		</form>	
-		<form id="legendSelectForm">
-			<select id="legendSelect" name="legendSelect" >
-				<option value="default" selected>범례 선택</option> <!-- 기본값을 설정합니다. -->
-			</select>
-		</form>			
-	</div>
-	<!-- 범례 요소 -->
-	<div class="legend">
-	  <div class="legend-title">전력 사용량 범례 (단위 kWh)</div>
-	  
-	  <div class="legend-item">
-	    <span style="background-color: #ff0000;"></span> 0 - 100
-	  </div>
-	  <div class="legend-item">
-	    <span style="background-color: #ffcc00;"></span> 101 - 200
-	  </div>
-	  <div class="legend-item">
-	    <span style="background-color: #00ff00;"></span> 201 - 300
-	  </div>
-	</div>	
+		<!-- 범례 요소 -->
+		<div class="legend">
+		  <div class="legend-title">전력 사용량 범례 (단위 kWh)</div>
+		  
+		  <div class="legend-item">
+		    <span style="background-color: #ff0000;"></span> 0 - 100
+		  </div>
+		  <div class="legend-item">
+		    <span style="background-color: #ffcc00;"></span> 101 - 200
+		  </div>
+		  <div class="legend-item">
+		    <span style="background-color: #00ff00;"></span> 201 - 300
+		  </div>
+		</div>	
 	
 </body>
 </html>
