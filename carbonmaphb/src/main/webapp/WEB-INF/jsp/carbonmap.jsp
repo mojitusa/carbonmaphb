@@ -908,7 +908,7 @@
    
   /* ---------------------------------------------------*/  
   /* ---------------------------------------------------*/  
-  /* ---------------------------------------------------*/
+  /* ---------------------SELECT 스타일---------------------------*/
   
   /* Select 스타일 */
   select {
@@ -1071,7 +1071,17 @@
       padding: 20px;
       border: 1px solid #888;
       width: 80%; /* 너비 */
+	  display: flex;
     }
+
+	#m-sel-container {
+		width: auto;
+		padding-top: 120px;
+	}
+
+	.m-sel-c {
+		margin-bottom: 15px;
+	}
 
     /* 닫기 버튼 스타일 */
     .close {
@@ -1079,6 +1089,7 @@
       float: right;
       font-size: 28px;
       font-weight: bold;
+	  z-index: 1; /* 최상위 */
     }
 
     /* 닫기 버튼 호버 효과 */
@@ -1087,6 +1098,7 @@
       color: black;
       text-decoration: none;
       cursor: pointer;
+	  
     }	
   </style>
 </head>
@@ -1159,10 +1171,28 @@
 				<div id="statModal" class="modal">
 					<!-- 모달 내용 -->
 					<div class="modal-content">
+						<div id="m-sel-container">
+							<div class=m-sel-c>
+								<select class="m-sel" name="m-sd-sel">
+									<option value="default" selected>시도 선택</option> <!-- 기본값을 설정합니다. -->
+								</select>
+							</div>
+							<div class=m-sel-c>
+								<select class="m-sel" name="m-sgg-sel">
+									<option value="default" selected>시군구 선택</option> <!-- 기본값을 설정합니다. -->
+								</select>
+							</div>
+						</div>					
 						<!-- 닫기 버튼 -->
-						<span class="close" onclick="closeModal()" style="position: absolute; top: 10px; right: 10px;">&times;</span>
-						<!-- 그래프가 그려질 div -->
-						<div id="chart_div" style="width: 100%; height: 800px;"></div>
+						<span class="close" onclick="closeModal()" style=" position: absolute; top: 60px; right: 180px;">&times;</span>
+						<!-- 그래프와 차트 -->
+						<div>
+							<!-- 그래프가 그려질 div -->
+							<div id="chart_div" style="width: 100%; height: 800px;"></div>
+							<!-- 차트 -->
+							<div>
+							</div>
+						</div>
 					</div>
 				</div>				
 			</div>
