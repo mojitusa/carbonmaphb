@@ -20,4 +20,6 @@ public interface ServletService {
 
 	List<Map<String, Object>> getSdPu();
 
+	List<Map<String, Object>> getSggPu(String sdnm);
+
 }

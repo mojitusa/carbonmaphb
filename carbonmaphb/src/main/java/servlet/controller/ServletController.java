@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -140,5 +141,16 @@ public class ServletController {
 	public List<Map<String, Object>> sdPu() {
 		List<Map<String, Object>> sdPu = servletService.getSdPu();
 		return sdPu;
+	}
+	
+	@RequestMapping(value = "sggPu.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@ResponseBody
+	public List<Map<String, Object>> sggPu(@RequestBody Map<String, String> requestBody) {
+		String sdnm = requestBody.get("sdSelected");
+		System.out.println("param : " + sdnm);
+		List<Map<String, Object>> sggPu = servletService.getSggPu(sdnm);
+		System.out.println("sggPu : " + sggPu);
+		
+		return sggPu;
 	}
 }

@@ -58,4 +58,8 @@
    		SELECT tl.sd_nm, c.sd_pu
    		FROM sd_carbon_d2 c JOIN tl_sd tl ON c.sd=tl.sd_cd 
    </select>
+   
+   <select id="getSggPu" resultType="Map">
+   		SELECT sgg_nm, sgg_pu FROM sgg_carbon_d2 WHERE sd_nm=#{sd_nm}
+   </select>
 </mapper>

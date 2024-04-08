@@ -15,7 +15,10 @@
 
 <!-- Google Charts API 스크립트 추가 -->
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-
+<script type="text/javascript">
+    google.charts.load('current', {'packages':['corechart', 'table']}); // 필요한 패키지 로드
+    google.charts.setOnLoadCallback(drawChart); // 차트 그리는 함수 호출
+</script>
 <script type="text/javascript">
 	$( document ).ready(function() {
 		
@@ -618,6 +621,100 @@
         	}      	
         	
         });
+        
+        // 시도 선택 셀렉트 박스에 change 이벤트 리스너 추가
+        $('#m-sd-sel').change(function() {
+
+            var sdSelected = $(this).val(); // 선택한 시도
+            if (sdSelected === 'default') return; // 기본값이면 아무 것도 하지 않음
+
+            console.log('sdSelected 값: ' + sdSelected);
+            
+            // JSON 형식으로 데이터 만들기
+            //var postData = { sdSelected: sdSelected };
+
+            // JSON 문자열로 변환
+           	//var jsonData = JSON.stringify(postData);
+            //console.log("jsonData : " + jsonData);
+            
+            // 그래프 그리기
+            //drawChart('/sggPu.do', jsonData);
+            
+	      	//DB에서 데이터 가져오기
+		    // Ajax를 사용하여 차트에 그릴 정보 가져오기
+	   		fetch('/sggPu.do', {
+	   			method: 'POST',
+	   		    headers: {
+	   		        'Content-Type': 'application/json'
+	   		    },
+	   		    body: JSON.stringify({ sdSelected: sdSelected })
+   	        })
+	        .then(response => response.json()) // JSON 형식으로 변환합니다.
+	        .then(data => {
+	            // 받은 데이터를 처리합니다.
+	            console.log('Received data 받은 데이터:', data);
+	            
+	            var dataTable = new google.visualization.DataTable();
+	            dataTable.addColumn('string', '지역');
+	            dataTable.addColumn('number', '전력 사용량');
+	            
+	            // 받은 데이터를 DataTable 형식으로 변환합니다.
+	            data.forEach(item => {
+	                dataTable.addRow([item.sgg_nm, item.sgg_pu]);
+	            });
+	            
+	            // 변환된 DataTable을 출력합니다.
+	            console.log(dataTable);
+	            
+	            // 옵션 설정
+	            var options = {
+	              //title: '지역별 전력사용량',
+	              legend: { position: 'top' }, // 범례를 위에 배치합니다.
+	              //vAxis: {title: 'Year',  titleTextStyle: {color: 'red'}}
+	            };
+	
+	            // 그래프 생성
+	            var chart = new google.visualization.BarChart(document.getElementById('chart_div'));
+	            chart.draw(dataTable, options);  
+	            
+	            // 표 생성
+	            var table = new google.visualization.Table(document.getElementById('table_div'));
+	            table.draw(dataTable, {showRowNumber: true, width: '100%', height: '100%'});            
+	            
+	        })
+	        .catch(error => {
+	            console.error('Error fetching data:', error);
+	        })            
+            
+            
+            
+            // 시도를 서버로 보내고 시군구 목록을 받아옴 (예시)
+            $.ajax({
+                url: '/sdSelect.do',
+                method: 'POST',
+                //contentType: 'application/json',
+                data: { selectedValue: sdSelected },
+                dataType: 'json',
+                success: function(data) {
+                    console.log('data : ' + data.sggList);
+                    sggList = JSON.parse(data.sggList);
+                    // 받은 데이터를 활용하여 시군구 선택 셀렉트 박스를 업데이트
+                    var sggSelect = $('#m-sgg-sel');
+                    sggSelect.empty(); // 기존 목록 초기화
+                    $.each(sggList, function(index, sggList) {
+		               	let indexOfSpace = sggList.sgg_nm.indexOf(' ');
+						let sgg_name = indexOfSpace !== -1 ? sggList.sgg_nm.substring(indexOfSpace + 1) : sggList.sgg_nm;
+                        var option = $('<option></option>').val(sggList.adm_sect_c).text(sgg_name);
+                        sggSelect.append(option);
+                    });
+                },
+                error: function(error) {
+                    console.error('Error fetching data:', error);
+                }
+            });
+        });     
+        
+        
 	});
 	
 	function fetchLegendInfo(styleName) {
@@ -742,7 +839,7 @@
       modal.style.display = "block";
 
       // 그래프 그리기
-      drawChart();
+      drawChart('/sdPu.do');
     }
 
     // 모달 창 닫기
@@ -759,11 +856,11 @@
     }
 
     // 그래프 그리기
-    function drawChart() {
-    	
+    function drawChart(endPoint ,param) {
+    
       	//DB에서 데이터 가져오기
 	    // Ajax를 사용하여 차트에 그릴 정보 가져오기
-   		fetch('/sdPu.do', { method: 'POST' }) // POST 요청으로 데이터를 요청합니다.
+   		fetch(endPoint, { method: 'POST' }, {data: { param: param }}) // POST 요청으로 데이터를 요청합니다.
         .then(response => response.json()) // JSON 형식으로 변환합니다.
         .then(data => {
             // 받은 데이터를 처리합니다.
@@ -783,13 +880,19 @@
             
             // 옵션 설정
             var options = {
-              title: 'Company Performance',
+              //title: '지역별 전력사용량',
+              legend: { position: 'top' }, // 범례를 위에 배치합니다.
               //vAxis: {title: 'Year',  titleTextStyle: {color: 'red'}}
+              vAxis: { minValue: 3000, maxValue: 4000 }, // 수직 축의 최소값과 최대값 설정
             };
 
             // 그래프 생성
             var chart = new google.visualization.BarChart(document.getElementById('chart_div'));
-            chart.draw(dataTable, options);            
+            chart.draw(dataTable, options);  
+            
+            // 표 생성
+            var table = new google.visualization.Table(document.getElementById('table_div'));
+            table.draw(dataTable, {showRowNumber: true, width: '100%', height: '100%'});            
             
         })
         .catch(error => {
@@ -797,6 +900,45 @@
         });	    
     
     }
+    
+       
+    
+ /* 	// 시도 선택 시 시군구 목록을 불러오는 함수
+    function loadStatSggList() {
+        var sdSelected = document.getElementById('m-sd-sel').value; // 선택한 시도
+        if (sdSelected === 'default') return; // 기본값이면 아무 것도 하지 않음
+        console.log('sdSelected : ' + sdSelected);
+        
+        // 시도를 서버로 보내고 시군구 목록을 받아옴 (예시)
+        fetch('/sdSelect.do', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ sdSelected: sdSelected })
+        })
+        .then(response => response.sggList.json())
+        .then(data => {
+        	
+        	console.log('data : ' + data);
+            // 받은 데이터를 활용하여 시군구 선택 셀렉트 박스를 업데이트
+            var sggSelect = document.getElementById('m-sgg-sel');
+            sggSelect.innerHTML = ''; // 기존 목록 초기화
+            data.forEach(sgg => {
+                var option = document.createElement('option');
+                option.value = sgg.adm_sect_c;
+                option.textContent = sgg.sgg_nm;
+                sggSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+        });
+    }
+
+    // 시도 선택 셀렉트 박스에 change 이벤트 리스너 추가
+    document.getElementById('m-sd-sel').addEventListener('change', loadStatSggList); */
+    
 
 </script>
 <style> 
@@ -1071,6 +1213,7 @@
       padding: 20px;
       border: 1px solid #888;
       width: 80%; /* 너비 */
+      height: 90%;
 	  display: flex;
     }
 
@@ -1098,8 +1241,16 @@
       color: black;
       text-decoration: none;
       cursor: pointer;
-	  
+    }
+    
+    #gr-ch {
+    	width: 100%;
+    	display: flex;
     }	
+    
+    #table_div {
+    	width: 60%;
+    }
   </style>
 </head>
 <body>
@@ -1173,12 +1324,15 @@
 					<div class="modal-content">
 						<div id="m-sel-container">
 							<div class=m-sel-c>
-								<select class="m-sel" name="m-sd-sel">
+								<select class="m-sel" id="m-sd-sel">
 									<option value="default" selected>시도 선택</option> <!-- 기본값을 설정합니다. -->
+						            <c:forEach items="${sdList}" var="item">
+						                <option value="${item.sd_nm}">${item.sd_nm}</option>
+						            </c:forEach>									
 								</select>
 							</div>
 							<div class=m-sel-c>
-								<select class="m-sel" name="m-sgg-sel">
+								<select class="m-sel" id="m-sgg-sel">
 									<option value="default" selected>시군구 선택</option> <!-- 기본값을 설정합니다. -->
 								</select>
 							</div>
@@ -1186,11 +1340,11 @@
 						<!-- 닫기 버튼 -->
 						<span class="close" onclick="closeModal()" style=" position: absolute; top: 60px; right: 180px;">&times;</span>
 						<!-- 그래프와 차트 -->
-						<div>
+						<div id="gr-ch">
 							<!-- 그래프가 그려질 div -->
-							<div id="chart_div" style="width: 100%; height: 800px;"></div>
+							<div id="chart_div" style="width: 100%;"></div>
 							<!-- 차트 -->
-							<div>
+							<div id="table_div">
 							</div>
 						</div>
 					</div>
