@@ -1,5 +1,7 @@
 package servlet.controller;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -7,25 +9,33 @@ import java.util.Map;
 
 import javax.annotation.Resource;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import servlet.impl.FileUp;
 import servlet.service.ServletService;
 
 @Controller
 public class ServletController {
 	@Resource(name = "ServletService")
 	private ServletService servletService;
+	
+	@Autowired
+	private FileUp fileUpService;
 
 	@RequestMapping(value = "/main.do")
 	public String mainTest(ModelMap model) throws Exception {
@@ -46,6 +56,21 @@ public class ServletController {
 
 		System.out.println(sd);
 		model.addAttribute("sdList", sd);
+		
+		// ObjectMapper를 사용하여 리스트를 JSON 문자열로 변환
+		ObjectMapper objectMapper = new ObjectMapper();
+	    String jsonSdList = null;
+	    
+		try {
+			jsonSdList = objectMapper.writeValueAsString(sd);
+
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		model.addAttribute("jsonSdList", jsonSdList);
+		
 
 		return "carbonmap";
 	}
@@ -153,4 +178,44 @@ public class ServletController {
 		
 		return sggPu;
 	}
+	
+	@RequestMapping(value = "bjdPu.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@ResponseBody
+	public List<Map<String, Object>> bjdPu(@RequestBody Map<String, String> requestBody) {
+		String sggCd = requestBody.get("sggSelected");
+		System.out.println("param : " + sggCd);
+		List<Map<String, Object>> bjdPu = servletService.getBjdPu(sggCd);
+		System.out.println("bjdPu : " + bjdPu);
+		
+		return bjdPu;
+	}
+	
+    @RequestMapping(value = "Upload.do", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public String uploadFile(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+        if (file.isEmpty()) {
+            // 파일이 비어있을 경우 에러 메시지 반환 또는 처리
+        	redirectAttributes.addFlashAttribute("message", "파일을 선택해주세요.");
+            return "redirect:/carbonmap.do";
+        }
+
+        try {
+            // 임시 디렉토리에 업로드된 파일을 저장
+            String uploadDir = "C:\\uploads"; // 업로드 디렉토리 경로로 변경
+            File dest = new File(uploadDir + File.separator + file.getOriginalFilename());
+            file.transferTo(dest);
+            System.out.println("파일 업로드 컨트롤러 작업을 시작합니다.");
+
+            // 파일 업로드 서비스 호출
+            fileUpService.uploadFile(dest.getAbsolutePath());
+            
+
+            // 업로드 후에는 적절한 페이지로 리다이렉트
+            redirectAttributes.addFlashAttribute("message", "파일 업로드 성공: " + file.getOriginalFilename());
+        } catch (IOException e) {
+            e.printStackTrace();
+            // 파일 업로드 중 에러가 발생했을 경우 에러 메시지 반환 또는 처리
+            redirectAttributes.addFlashAttribute("message", "파일 업로드 중 오류가 발생했습니다.");
+        }
+        return "redirect:/carbonmap.do";
+    }
 }

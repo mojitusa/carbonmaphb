@@ -19,10 +19,17 @@
       <param-value>/WEB-INF/config/dispatcher-servlet.xml</param-value>
     </init-param>
     <load-on-startup>1</load-on-startup>
+	  <!-- 파일 업로드 설정 -->
+	  <multipart-config>
+	      <max-file-size>-1</max-file-size> <!-- 파일 크기 제한 해제 -->
+	      <max-request-size>-1</max-request-size> <!-- 요청 크기 제한 해제 -->
+	      <location>C:\uploads</location> <!-- 임시 저장소 위치 -->
+	  </multipart-config>    
   </servlet>
   <servlet-mapping>
     <servlet-name>action</servlet-name>
     <url-pattern>*.do</url-pattern>
   </servlet-mapping>
+
 
 </web-app>

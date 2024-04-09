@@ -22,4 +22,6 @@ public interface ServletService {
 
 	List<Map<String, Object>> getSggPu(String sdnm);
 
+	List<Map<String, Object>> getBjdPu(String sggCd);
+
 }

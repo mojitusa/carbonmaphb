@@ -62,4 +62,12 @@
    <select id="getSggPu" resultType="Map">
    		SELECT sgg_nm, sgg_pu FROM sgg_carbon_d2 WHERE sd_nm=#{sd_nm}
    </select>
+   
+   <select id="getBjdPu" resultType="Map">
+   		SELECT bjd_nm, bjd_pu FROM bjd_carbon_d2 WHERE bjd_cd LIKE CONCAT(#{bjd_cd}, '%');
+   </select>
+   
+    <insert id="insertData" parameterType="Map">
+        INSERT INTO your_table (column1, column2, ...) VALUES (#{key1}, #{key2}, ...)
+    </insert>   
 </mapper>

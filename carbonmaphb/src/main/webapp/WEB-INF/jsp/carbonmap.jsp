@@ -19,6 +19,12 @@
     google.charts.load('current', {'packages':['corechart', 'table']}); // 필요한 패키지 로드
     google.charts.setOnLoadCallback(drawChart); // 차트 그리는 함수 호출
 </script>
+
+<!-- Bootstrap CSS -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
 <script type="text/javascript">
 	$( document ).ready(function() {
 		
@@ -622,23 +628,28 @@
         	
         });
         
+     	// 초기에 그래프를 생성하기 위한 변수 선언
+        var chart;
         // 시도 선택 셀렉트 박스에 change 이벤트 리스너 추가
         $('#m-sd-sel').change(function() {
 
             var sdSelected = $(this).val(); // 선택한 시도
-            if (sdSelected === 'default') return; // 기본값이면 아무 것도 하지 않음
-
             console.log('sdSelected 값: ' + sdSelected);
             
-            // JSON 형식으로 데이터 만들기
-            //var postData = { sdSelected: sdSelected };
-
-            // JSON 문자열로 변환
-           	//var jsonData = JSON.stringify(postData);
-            //console.log("jsonData : " + jsonData);
-            
-            // 그래프 그리기
-            //drawChart('/sggPu.do', jsonData);
+            if (sdSelected === 'default') return; // 기본값이면 아무 것도 하지 않음
+            else if (sdSelected == 'enSd') {
+            	
+            	drawChart('/sdPu.do');
+                //기존의 더미 시군구 리스트 비우기
+                let mSggSel = $('#m-sgg-sel');
+                mSggSel.empty();
+                let dft = $('<option></option>').val('default').text('시군구 선택');
+                mSggSel.append(dft);
+                
+            	return;
+            	
+            }
+            console.log('sdSelected 값?????????????????: ' + sdSelected);
             
 	      	//DB에서 데이터 가져오기
 		    // Ajax를 사용하여 차트에 그릴 정보 가져오기
@@ -666,27 +677,46 @@
 	            // 변환된 DataTable을 출력합니다.
 	            console.log(dataTable);
 	            
+	            // 표 생성
+	            var table = new google.visualization.Table(document.getElementById('table_div'));
+	            table.draw(dataTable, {showRowNumber: true, width: '100%'});
+	            
+	            // 표의 높이를 가져와서 그래프의 높이로 설정
+	            var tableHeight = getTableHeight();
+	            
 	            // 옵션 설정
 	            var options = {
 	              //title: '지역별 전력사용량',
 	              legend: { position: 'top' }, // 범례를 위에 배치합니다.
 	              //vAxis: {title: 'Year',  titleTextStyle: {color: 'red'}}
+	              //vAxis: { minValue: 3000, maxValue: 4000 }, // 수직 축의 최소값과 최대값 설정
+	              chartArea: { top: 20, bottom: 100 }, // 그래프 영역 설정
+	              bars: 'vertical', // 세로 막대 그래프 사용
+	              bar: { groupWidth: '80%' }, // 막대 그룹의 폭 설정
+	              isStacked: true, // 막대를 쌓아서 표시
+	              width: '100%', // 그래프의 전체 너비 사용
+	              height: tableHeight, // 그래프의 전체 높이 사용
+	              fontSize: 12, // 텍스트의 크기를 12px로 설정합니다. 이 값을 조절하여 텍스트의 크기를 조절할 수 있습니다.
 	            };
 	
+	            // 처음 그래프를 생성하는 경우에는 chart 변수가 비어 있으므로 새로 생성합니다.
+	            /* if (!chart) {
+	                // 그래프 생성
+	                chart = new google.visualization.BarChart(document.getElementById('chart_div'));
+	            } */
+
+	            // 그래프 데이터 업데이트
+	            //chart.draw(dataTable, options);
+	            
 	            // 그래프 생성
 	            var chart = new google.visualization.BarChart(document.getElementById('chart_div'));
-	            chart.draw(dataTable, options);  
+	            chart.draw(dataTable, options);   
 	            
-	            // 표 생성
-	            var table = new google.visualization.Table(document.getElementById('table_div'));
-	            table.draw(dataTable, {showRowNumber: true, width: '100%', height: '100%'});            
 	            
 	        })
 	        .catch(error => {
 	            console.error('Error fetching data:', error);
 	        })            
-            
-            
             
             // 시도를 서버로 보내고 시군구 목록을 받아옴 (예시)
             $.ajax({
@@ -701,18 +731,107 @@
                     // 받은 데이터를 활용하여 시군구 선택 셀렉트 박스를 업데이트
                     var sggSelect = $('#m-sgg-sel');
                     sggSelect.empty(); // 기존 목록 초기화
+                    let total = $('<option></option>').val('default').text('시군구 선택');
+                    sggSelect.append(total);             
+                    
                     $.each(sggList, function(index, sggList) {
 		               	let indexOfSpace = sggList.sgg_nm.indexOf(' ');
 						let sgg_name = indexOfSpace !== -1 ? sggList.sgg_nm.substring(indexOfSpace + 1) : sggList.sgg_nm;
                         var option = $('<option></option>').val(sggList.adm_sect_c).text(sgg_name);
                         sggSelect.append(option);
                     });
+                    
+                    //시도 리스트도 업데이트
+                    //시도 선택을 지우고 시도 전체 선택을 가장 위에 추가하자.
+                    var sdSelect = $('#m-sd-sel');
+                    sdSelect.empty(); // 기존 목록 초기화
+                    let enSd = $('<option></option>').val('default').text('시도 선택');
+                    sdSelect.append(enSd);
+                    enSd = $('<option></option>').val('enSd').text('시도 전체 선택');
+                    sdSelect.append(enSd);
+                    let sdList = ${jsonSdList};
+                   			console.log("json 시도 리스트 : " + sdList);
+                    $.each(sdList, function(index, sdList) {
+		               	//let indexOfSpace = sggList.sgg_nm.indexOf(' ');
+						//let sgg_name = indexOfSpace !== -1 ? sggList.sgg_nm.substring(indexOfSpace + 1) : sggList.sgg_nm;
+                        var option = $('<option></option>').val(sdList.sd_nm).text(sdList.sd_nm);
+                        sdSelect.append(option);
+                    });
+                    
                 },
                 error: function(error) {
                     console.error('Error fetching data:', error);
                 }
             });
         });     
+        
+        // 시도 선택 셀렉트 박스에 change 이벤트 리스너 추가
+        $('#m-sgg-sel').change(function() {
+
+            var sggSelected = $(this).val(); // 선택한 시도
+            console.log('sggSelected 값: ' + sggSelected);
+            
+            if (sggSelected === 'default') return; // 기본값이면 아무 것도 하지 않음
+            
+	      	//DB에서 데이터 가져오기
+		    // Ajax를 사용하여 차트에 그릴 정보 가져오기
+	   		fetch('/bjdPu.do', {
+	   			method: 'POST',
+	   		    headers: {
+	   		        'Content-Type': 'application/json'
+	   		    },
+	   		    body: JSON.stringify({ sggSelected: sggSelected })
+   	        })
+	        .then(response => response.json()) // JSON 형식으로 변환합니다.
+	        .then(data => {
+	            // 받은 데이터를 처리합니다.
+	            console.log('Received data 받은 데이터:', data);
+	            
+	            var dataTable = new google.visualization.DataTable();
+	            dataTable.addColumn('string', '지역');
+	            dataTable.addColumn('number', '전력 사용량');
+	            
+	            // 받은 데이터를 DataTable 형식으로 변환합니다.
+	            data.forEach(item => {
+	                dataTable.addRow([item.bjd_nm, item.bjd_pu]);
+	            });
+	            
+	            // 변환된 DataTable을 출력합니다.
+	            console.log(dataTable);
+	            
+	            // 표 생성
+	            var table = new google.visualization.Table(document.getElementById('table_div'));
+	            table.draw(dataTable, {showRowNumber: true, width: '100%'});
+	            
+	            // 표의 높이를 가져와서 그래프의 높이로 설정
+	            var tableHeight = getTableHeight();
+	            
+	            // 옵션 설정
+	            var options = {
+	              //title: '지역별 전력사용량',
+	              legend: { position: 'top' }, // 범례를 위에 배치합니다.
+	              //vAxis: {title: 'Year',  titleTextStyle: {color: 'red'}}
+	              //vAxis: { minValue: 3000, maxValue: 4000 }, // 수직 축의 최소값과 최대값 설정
+	              chartArea: { top: 20, bottom: 100 }, // 그래프 영역 설정
+	              bars: 'vertical', // 세로 막대 그래프 사용
+	              bar: { groupWidth: '80%' }, // 막대 그룹의 폭 설정
+	              isStacked: true, // 막대를 쌓아서 표시
+	              width: '100%', // 그래프의 전체 너비 사용
+	              height: tableHeight, // 그래프의 전체 높이 사용
+	              fontSize: 12, // 텍스트의 크기를 12px로 설정합니다. 이 값을 조절하여 텍스트의 크기를 조절할 수 있습니다.
+	            };
+	            
+	            // 그래프 생성
+	            var chart = new google.visualization.BarChart(document.getElementById('chart_div'));
+	            chart.draw(dataTable, options);   
+	            
+	            
+	        })
+	        .catch(error => {
+	            console.error('Error fetching data:', error);
+	        })            
+            
+        });        
         
         
 	});
@@ -831,7 +950,7 @@
     google.charts.load('current', {'packages':['corechart']});
     
     // 모달 창 열기
-    function openModal() {
+    function openModalStat() {
       // 모달 창 요소 가져오기
       var modal = document.getElementById('statModal');
       
@@ -840,6 +959,12 @@
 
       // 그래프 그리기
       drawChart('/sdPu.do');
+      
+      //기존의 더미 시군구 리스트 비우기
+      let mSggSel = $('#m-sgg-sel');
+      mSggSel.empty();
+      let dft = $('<option></option>').val('default').text('시군구 선택');
+      mSggSel.append(dft);                   
     }
 
     // 모달 창 닫기
@@ -878,21 +1003,28 @@
             // 변환된 DataTable을 출력합니다.
             console.log(dataTable);
             
+            // 표 생성
+            var table = new google.visualization.Table(document.getElementById('table_div'));
+            table.draw(dataTable, {showRowNumber: true, width: '100%', height: '100%'});
+            
             // 옵션 설정
             var options = {
               //title: '지역별 전력사용량',
               legend: { position: 'top' }, // 범례를 위에 배치합니다.
               //vAxis: {title: 'Year',  titleTextStyle: {color: 'red'}}
-              vAxis: { minValue: 3000, maxValue: 4000 }, // 수직 축의 최소값과 최대값 설정
+              //vAxis: { minValue: 3000, maxValue: 4000 }, // 수직 축의 최소값과 최대값 설정
+              chartArea: { top: 20, bottom: 100 }, // 그래프 영역 설정
+              bars: 'vertical', // 세로 막대 그래프 사용
+              bar: { groupWidth: '80%' }, // 막대 그룹의 폭 설정
+              isStacked: true, // 막대를 쌓아서 표시
+              width: '100%', // 그래프의 전체 너비 사용
+              height: '100%' // 그래프의 전체 높이 사용              
             };
-
+            
             // 그래프 생성
             var chart = new google.visualization.BarChart(document.getElementById('chart_div'));
-            chart.draw(dataTable, options);  
+            chart.draw(dataTable, options);   
             
-            // 표 생성
-            var table = new google.visualization.Table(document.getElementById('table_div'));
-            table.draw(dataTable, {showRowNumber: true, width: '100%', height: '100%'});            
             
         })
         .catch(error => {
@@ -901,43 +1033,73 @@
     
     }
     
-       
-    
- /* 	// 시도 선택 시 시군구 목록을 불러오는 함수
-    function loadStatSggList() {
-        var sdSelected = document.getElementById('m-sd-sel').value; // 선택한 시도
-        if (sdSelected === 'default') return; // 기본값이면 아무 것도 하지 않음
-        console.log('sdSelected : ' + sdSelected);
-        
-        // 시도를 서버로 보내고 시군구 목록을 받아옴 (예시)
-        fetch('/sdSelect.do', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ sdSelected: sdSelected })
-        })
-        .then(response => response.sggList.json())
-        .then(data => {
-        	
-        	console.log('data : ' + data);
-            // 받은 데이터를 활용하여 시군구 선택 셀렉트 박스를 업데이트
-            var sggSelect = document.getElementById('m-sgg-sel');
-            sggSelect.innerHTML = ''; // 기존 목록 초기화
-            data.forEach(sgg => {
-                var option = document.createElement('option');
-                option.value = sgg.adm_sect_c;
-                option.textContent = sgg.sgg_nm;
-                sggSelect.appendChild(option);
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching data:', error);
-        });
+    function getTableHeight() {
+        var tableHeight = $('#table_div').height(); // 표의 높이 가져오기
+        return tableHeight;
     }
-
-    // 시도 선택 셀렉트 박스에 change 이벤트 리스너 추가
-    document.getElementById('m-sd-sel').addEventListener('change', loadStatSggList); */
+    
+    ////////////////////////////////////////////////////////////////
+    ////////												///////
+    /////////              파일 업로드						///////
+    /////////												///////
+    /////////////////////////////////////////////////////////////////
+    
+    // 파일 업로드 모달 창 열기
+    function openModalFileUp() {
+      // 모달 창 요소 가져오기
+      var modal = document.getElementById('uploadModal');
+      
+      // 모달 창 열기
+      modal.style.display = "block";
+      
+    }
+       
+ 	// 파일 업로드 모달 창 닫기
+    function closeModalFileUp() {
+      // 모달 창 요소 가져오기
+      var modal = document.getElementById('uploadModal');
+      
+      // 모달 창 닫기
+      modal.style.display = "none";
+    }    
+    
+	// 파일 업로드 함수
+	function uploadFile() {
+	    var fileInput = document.getElementById('file');
+	    var file = fileInput.files[0];
+	    var formData = new FormData();
+	    formData.append('file', file);
+	
+	    var xhr = new XMLHttpRequest();
+	    xhr.open('POST', '/Upload.do', true);
+	
+	    // 업로드 진행 상황을 모니터링하는 이벤트 리스너 추가
+	    xhr.upload.onprogress = function(event) {
+	        if (event.lengthComputable) {
+	            var percentComplete = (event.loaded / event.total) * 100;
+	            document.getElementById('progressBar').value = percentComplete;
+	            document.getElementById('progressText').innerText = percentComplete.toFixed(2) + '%';
+	        }
+	    };
+	
+	    xhr.onload = function() {
+	        if (xhr.status === 200) {
+	            // 업로드 완료 시 동작
+	            alert('파일 업로드 완료!');
+	            // 성공적으로 업로드되었으므로 페이지 새로고침 또는 다른 동작 수행
+	        } else {
+	            // 업로드 실패 시 동작
+	            alert('파일 업로드 실패!');
+	        }
+	    };
+	
+	    xhr.onerror = function() {
+	        // 에러 처리
+	        alert('파일 업로드 중 오류가 발생했습니다.');
+	    };
+	
+	    xhr.send(formData);
+	}
     
 
 </script>
@@ -1006,7 +1168,7 @@
     #selectBoxContainer {
         top: 80px;
         height: 600px;
-        width: 260px; 
+        /* width: 260px; */ 
         z-index: 900;
         border: 1px solid rgba(0, 0, 0, 0.1);
         background-color: rgba(255, 255, 255, 0.9);
@@ -1191,7 +1353,7 @@
 	/* --------------------------------------------------- */
 	/* --------------------------------------------------- */
 	/* --------------------------------------------------- */
-	/* -----------------모달 스타일----------------------- */
+	/* ----            --모달 스타일---           -------- */
 	
     /* 모달 스타일 */
     .modal {
@@ -1270,8 +1432,8 @@
 			</div>
 			<div id=menuSel>
 				<div class=navMenu>지도</div>
-				<div class=navMenu>업로드</div>
-				<div class=navMenu onclick="openModal()">통계</div>
+				<div class=navMenu onclick="openModalFileUp()">업로드</div>
+				<div class=navMenu onclick="openModalStat()">통계</div>
 			</div>
 		</div>
 		<div id="navMain">
@@ -1315,8 +1477,38 @@
 				</form>			
 			</div>
 			<div id="upLoad">
-				
+			    <!-- 모달 창 -->
+			    <div class="modal" id="uploadModal">
+			        <div class="modal-dialog">
+			            <div class="modal-content">
+			                
+			                <!-- Modal Header -->
+			                <div class="modal-header">
+			                    <h4 class="modal-title">File Upload</h4>
+			                    <button type="button" class="close" data-dismiss="modal" onclick="closeModalFileUp()">&times;</button>
+			                </div>
+			                
+			                <!-- Modal Body -->
+			                <div class="modal-body">
+			                    <form id="uploadForm" enctype="multipart/form-data">
+			                        <div class="form-group">
+			                            <label for="file">Select File:</label>
+			                            <input type="file" class="form-control-file" id="file" name="file">
+			                        </div>
+			                    </form>
+			                </div>
+			                
+			                <!-- Modal Footer -->
+			                <div class="modal-footer">
+			                    <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="closeModalFileUp()">Close</button>
+			                    <button type="button" class="btn btn-primary" onclick="uploadFile()">Upload</button>
+			                </div>
+			                
+			            </div>
+			        </div>
+			    </div>
 			</div>
+
 			<div id="stat">
 				<!-- 모달 창 -->
 				<div id="statModal" class="modal">

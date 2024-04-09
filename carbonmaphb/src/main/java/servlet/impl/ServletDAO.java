@@ -53,4 +53,12 @@ public class ServletDAO extends EgovComAbstractDAO {
 		return selectList(("servlet.getSggPu"), sdnm);
 	}
 
+	public List<Map<String, Object>> getBjdPu(String sggCd) {
+		return selectList(("servlet.getBjdPu"), sggCd);
+	}
+	
+	public void insertData(Map data) {
+		insert(("servlet.insertData"), data);
+	}
+
 }
