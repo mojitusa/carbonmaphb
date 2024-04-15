@@ -68,6 +68,21 @@
    </select>
    
     <insert id="insertData" parameterType="Map">
-        INSERT INTO your_table (column1, column2, ...) VALUES (#{key1}, #{key2}, ...)
+        INSERT INTO "TB_CARBON_D2_2" (
+        year_month_of_use, site_location, road_name_site_location, city_county_district_code, 
+        ligal_dong_code, land_classification_code, beon, ji, new_address_serial_number, 
+        new_address_street_code, new_address_above_ground_and_underground_code, 
+        new_address_main_address_number, new_address_sub_address_number, power_usage) 
+        VALUES (
+        #{year_month_of_use}, #{site_location}, #{road_name_site_location}, 
+        #{city_county_district_code}, #{ligal_dong_code}, #{land_classification_code}, 
+        #{beon}, #{ji}, #{new_address_serial_number}, #{new_address_street_code}, 
+        #{new_address_above_ground_and_underground_code}, #{new_address_main_address_number}, 
+        #{new_address_sub_address_number}, #{power_usage});
     </insert>   
+    
+    <delete id="truncateTb">
+    	TRUNCATE public."TB_CARBON_D2_2";
+    </delete>
+    
 </mapper>

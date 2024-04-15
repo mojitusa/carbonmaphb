@@ -1079,6 +1079,8 @@
 	            var percentComplete = (event.loaded / event.total) * 100;
 	            document.getElementById('progressBar').value = percentComplete;
 	            document.getElementById('progressText').innerText = percentComplete.toFixed(2) + '%';
+	        	// 프로그레스 모달 열기
+	            openProgressModal();	            
 	        }
 	    };
 	
@@ -1091,15 +1093,27 @@
 	            // 업로드 실패 시 동작
 	            alert('파일 업로드 실패!');
 	        }
+	   		// 업로드 완료 시 프로그레스 모달 닫기
+	        closeProgressModal();	        
 	    };
 	
 	    xhr.onerror = function() {
 	        // 에러 처리
 	        alert('파일 업로드 중 오류가 발생했습니다.');
+	        // 업로드 오류 시 프로그레스 모달 닫기
+	        closeProgressModal();	        	        
 	    };
 	
 	    xhr.send(formData);
 	}
+	
+	function openProgressModal() {
+	  document.getElementById('progressModal').style.display = 'block';
+	}
+	// 모달 창 닫기 함수
+	function closeProgressModal() {
+	  document.getElementById('progressModal').style.display = 'none';
+	}		
     
 
 </script>
@@ -1289,7 +1303,7 @@
     border-radius: 10px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
     padding: 20px;
-    width: 250px; /* 가로폭 조정 */
+    width: 280px; /* 가로폭 조정 */
     font-size: 16px;
     color: #333; /* 폰트 색상 */
     line-height: 1.5; /* 줄간격 조정 */
@@ -1413,6 +1427,52 @@
     #table_div {
     	width: 60%;
     }
+    
+    /*                                                */
+    /*                                                */
+    /*            파일 업로드                         */
+    /*                                                */
+    /*                                                */
+    
+	/* 모달 스타일 */
+ 	#progressModal {
+	  display: none; /* 초기에는 숨김 */
+	  position: fixed; /* 화면에 고정 */
+	  /* z-index: 1000; */ /* 다른 요소 위에 표시 */
+	  top: 15%;
+	  left: 50%;
+	  transform: translateX(-50%); /* 가로 중앙 정렬 */
+	  width: 800px; 
+	  height: auto; 
+	  border-radius: 10px;
+	  background-color: rgba(0, 0, 0, 0.5); /* 반투명한 배경 */
+	}    
+    
+	#prg-modal-content {
+	  background-color: #fefefe;
+	  margin: auto;   /* 모달 창을 화면 중앙에 위치 */
+	  padding: 20px;
+	  border: 1px solid #888;
+	  /* width: 80%; */
+	  max-width: 800px;
+	  border-radius: 10px;
+	}    
+	
+	/* 프로그레스 바 스타일 */
+	#progressBarContainer {
+	  margin-top: 20px;
+	  text-align: center;
+	}
+	
+	#progressBar {
+	  width: 100%;
+	}
+	
+	#progressText {
+	  font-size: 18px;
+	}	
+       
+    
   </style>
 </head>
 <body>
@@ -1544,20 +1604,31 @@
 			</div>
 		</div>
 	</div>
-		<!-- 범례 요소 -->
-		<div class="legend">
-		  <div class="legend-title">전력 사용량 범례 (단위 kWh)</div>
-		  
-		  <div class="legend-item">
-		    <span style="background-color: #ff0000;"></span> 0 - 100
-		  </div>
-		  <div class="legend-item">
-		    <span style="background-color: #ffcc00;"></span> 101 - 200
-		  </div>
-		  <div class="legend-item">
-		    <span style="background-color: #00ff00;"></span> 201 - 300
-		  </div>
-		</div>	
+	<!-- 범례 요소 -->
+	<div class="legend">
+	  <div class="legend-title">전력 사용량 범례 (단위 kWh)</div>
+	  
+	  <div class="legend-item">
+	    <span style="background-color: #ff0000;"></span> 0 - 100
+	  </div>
+	  <div class="legend-item">
+	    <span style="background-color: #ffcc00;"></span> 101 - 200
+	  </div>
+	  <div class="legend-item">
+	    <span style="background-color: #00ff00;"></span> 201 - 300
+	  </div>
+	</div>	
+
+	<!-- 프로그레스 모달 -->
+	<div id="progressModal" class="modal">
+	  <div id="prg-modal-content">
+	    <h2>파일 업로드 중...</h2>
+	    <div id="progressBarContainer">
+	      <progress id="progressBar" max="100" value="0"></progress>
+	      <span id="progressText">0%</span>
+	    </div>
+	  </div>
+	</div>	
 	
 </body>
 </html>

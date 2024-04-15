@@ -27,6 +27,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import servlet.impl.FileUp;
+import servlet.service.FileUpService;
 import servlet.service.ServletService;
 
 @Controller
@@ -35,7 +36,7 @@ public class ServletController {
 	private ServletService servletService;
 	
 	@Autowired
-	private FileUp fileUpService;
+	private FileUpService fileUpService;
 
 	@RequestMapping(value = "/main.do")
 	public String mainTest(ModelMap model) throws Exception {
@@ -204,6 +205,9 @@ public class ServletController {
             File dest = new File(uploadDir + File.separator + file.getOriginalFilename());
             file.transferTo(dest);
             System.out.println("파일 업로드 컨트롤러 작업을 시작합니다.");
+            
+            //테이블 비우기
+            fileUpService.trunc();
 
             // 파일 업로드 서비스 호출
             fileUpService.uploadFile(dest.getAbsolutePath());

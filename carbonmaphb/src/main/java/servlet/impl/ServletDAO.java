@@ -61,4 +61,8 @@ public class ServletDAO extends EgovComAbstractDAO {
 		insert(("servlet.insertData"), data);
 	}
 
+	public void trunc() {
+		delete("servlet.truncateTb");
+	}
+
 }

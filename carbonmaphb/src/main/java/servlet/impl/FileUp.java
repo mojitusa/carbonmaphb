@@ -2,6 +2,7 @@ package servlet.impl;
 // YourService.java
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -10,8 +11,10 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import servlet.service.FileUpService;
+
 @Service("FileUp")
-public class FileUp {
+public class FileUp implements FileUpService {
 
     private final ServletDAO dao;
 
@@ -20,9 +23,17 @@ public class FileUp {
         this.dao = yourDAO;
     }
 
+    @Override
     public void uploadFile(String filePath) {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            // 파일 크기 가져오기
+            File file = new File(filePath);
+            long fileSize = file.length();
+            long bytesRead = 0;
+
+            System.out.println("서비스에서 파일 업로드 작업을 시작합니다.");
             String line;
+            
             while ((line = br.readLine()) != null) {
                 // 여러 열을 맵에 담기 위해 쉼표로 구분하여 데이터를 나눔
                 String[] columns = line.split("|"); // 예시: 컬럼이 쉼표로 구분되어 있다고 가정
@@ -47,19 +58,29 @@ public class FileUp {
                 dataMap.put("power_usage", columns[14]);
                 // 필요한 만큼 컬럼과 데이터를 추가
                 
-                // 수정된 데이터 맵을 DAO의 insertData 메서드에 전달
-                dao.insertData(dataMap);
+	            try {
+	                // 수정된 데이터 맵을 DAO의 insertData 메서드에 전달
+	                dao.insertData(dataMap);   
+	                
+	                // 파일 업로드 진행 상황 업데이트
+	                bytesRead += line.getBytes().length;
+	                int progressPercent = (int) ((bytesRead * 100) / fileSize);
+	                System.out.println("progressPercent: " + progressPercent);
+	            } catch (Exception e) {
+	                // 업로드 실패 시 오류 메시지 전송
+	                e.printStackTrace();
+	                return; // 업로드 실패 시 바로 리턴하여 메서드 종료
+	            }	                
                 
-                // 스낵바 업데이트 코드 추가
-                updateSnackbar();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    // 스낵바 업데이트 메서드
-    private void updateSnackbar() {
-        // 스낵바 업데이트 코드 작성
-    }
+
+	@Override
+	public void trunc() {
+		dao.trunc();
+	}
 }
