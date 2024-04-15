@@ -44,18 +44,18 @@ public class FileUp implements FileUpService {
                 // 실제 컬럼명에 맞게 수정해야 함
                 dataMap.put("year_month_of_use", columns[0]);
                 dataMap.put("site_location", columns[1]);
-                dataMap.put("road_name_site_location", columns[3]);
-                dataMap.put("city_county_district_code", columns[4]);
-                dataMap.put("ligal_dong_code", columns[5]);
-                dataMap.put("land_classification_code", columns[6]);
-                dataMap.put("beon", columns[7]);
-                dataMap.put("ji", columns[8]);
-                dataMap.put("new_address_serial_number", columns[9]);
-                dataMap.put("new_address_street_code", columns[10]);
-                dataMap.put("new_address_above_ground_and_underground_code", columns[11]);
-                dataMap.put("new_address_main_address_number", columns[12]);
-                dataMap.put("new_address_sub_address_number", columns[13]);
-                dataMap.put("power_usage", columns[14]);
+                dataMap.put("road_name_site_location", columns[2]);
+                dataMap.put("city_county_district_code", columns[3]);
+                dataMap.put("ligal_dong_code", columns[4]);
+                dataMap.put("land_classification_code", columns[5]);
+                dataMap.put("beon", columns[6]);
+                dataMap.put("ji", columns[7]);
+                dataMap.put("new_address_serial_number", columns[8]);
+                dataMap.put("new_address_street_code", columns[9]);
+                dataMap.put("new_address_above_ground_and_underground_code", columns[10]);
+                dataMap.put("new_address_main_address_number", columns[11]);
+                dataMap.put("new_address_sub_address_number", columns[12]);
+                dataMap.put("power_usage", Double.parseDouble(columns[13]));
                 // 필요한 만큼 컬럼과 데이터를 추가
                 
 	            try {
