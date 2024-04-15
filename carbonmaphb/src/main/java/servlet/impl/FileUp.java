@@ -36,7 +36,7 @@ public class FileUp implements FileUpService {
             
             while ((line = br.readLine()) != null) {
                 // 여러 열을 맵에 담기 위해 쉼표로 구분하여 데이터를 나눔
-                String[] columns = line.split("|"); // 예시: 컬럼이 쉼표로 구분되어 있다고 가정
+                String[] columns = line.split("\\|"); // 예시: 컬럼이 쉼표로 구분되어 있다고 가정
                 Map<String, Object> dataMap = new HashMap<>();
 
                 // 맵에 컬럼과 데이터를 쌍으로 저장
