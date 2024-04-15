@@ -1387,15 +1387,17 @@
       background-color: #fefefe; /* 흰색 배경 */
       margin: 3% auto; /* 중앙 정렬 */
       padding: 20px;
+      padding-top: 120px;
       border: 1px solid #888;
       width: 80%; /* 너비 */
-      height: 90%;
+      /* height: 90%; */
 	  display: flex;
+	  flex-direction: row;
     }
 
 	#m-sel-container {
 		width: auto;
-		padding-top: 120px;
+		/* padding-top: 120px; */
 	}
 
 	.m-sel-c {
@@ -1590,7 +1592,7 @@
 							</div>
 						</div>					
 						<!-- 닫기 버튼 -->
-						<span class="close" onclick="closeModal()" style=" position: absolute; top: 60px; right: 180px;">&times;</span>
+						<span class="close" onclick="closeModal()" style=" position: absolute; top: 60px; right: 60px;">&times;</span>
 						<!-- 그래프와 차트 -->
 						<div id="gr-ch">
 							<!-- 그래프가 그려질 div -->
