@@ -26,4 +26,4 @@ HTML, JS, CSS
 OpenLayers  
   
 V-World  
-건축데이개방  
+건축데이터개방  
