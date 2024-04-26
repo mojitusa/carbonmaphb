@@ -16,6 +16,7 @@
 ### Development Environment
 
 PostgreSQL 14  
+PostGIS  
 GeoServer  
 QGIS  
   
